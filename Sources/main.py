@@ -127,30 +127,33 @@ def main() :
 
     pdf_file = cache_directory.joinpath("diydog-2022.pdf")
     if not pdf_file.exists() :
+        print("Downloading brewdog's Diydog pdf booklet ...")
         download_pdf(C_DIYDOG_URL, pdf_file)
+        print("-> OK : Downloading succeeded ! Pdf file was downloaded at : {}".format(pdf_file))
         # Triggers force caching because we need to regenerate everything
         force_caching = True
 
     # Extract pages for caching purposes
     if force_caching :
+        print("Extracting all beer pages to {}".format(cached_pages_dir))
         with open(pdf_file, "rb") as file :
             reader = PyPDF2.PdfFileReader(file)
             # Page 22 is the first beer
             start_page = 21
 
             # Page 436 is the very last beer
-            # end_page = 435
-            end_page = 435
+            end_page = 436
 
             for i in range(start_page, end_page) :
                 print("Extracting page : {}".format(i))
                 page = reader.getPage(i)
                 print("Caching page to disk")
                 cache_single_pdf_page(cached_pages_dir.joinpath("page_{}.pdf".format(i)), page=page)
-
+        print("-> OK : Pages extracted successfully in {}".format(cached_pages_dir))
 
     # List already cached pages
     pages_list : list[tuple[int, Path]] = []
+    print("Listing available pdf pages ...")
     for (dirpath, _, filenames) in os.walk(cached_pages_dir) :
         for file in filenames :
             if file.endswith(".pdf") :
@@ -159,6 +162,7 @@ def main() :
                 pages_list.append((index, filepath))
     # Sort by indices
     pages_list.sort(key=lambda x : x[0])
+    print("-> OK : Found {} pages in {}".format(len(pages_list, cached_pages_dir)))
 
     for page in pages_list :
         print("Analysing page {}".format(page[0]))
@@ -170,13 +174,19 @@ def main() :
             text = parsed.extract_text(visitor_text=text_block_from_page)
             last_block = page_blocks.get_last_block()
             all_blocks.append(copy(page_blocks))
+
+            print("Caching page and contents ...")
+            cache_page_blocks(cached_blocks_dir, page_blocks)
+            print("-> OK : Successfully cached page text blocks.")
+
             page_blocks.reset()
 
-            print("Caching page and contents")
-            cache_all_blocks(cached_blocks_dir, all_blocks)
 
         print("Done parsing content")
 
 
 if __name__ == "__main__" :
-    main()
+    try :
+        main()
+    except Exception as e :
+        print("-> ERROR : Caught exception while running script, error was  : {}".format(e))
