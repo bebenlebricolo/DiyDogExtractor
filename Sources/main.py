@@ -162,7 +162,7 @@ def main() :
                 pages_list.append((index, filepath))
     # Sort by indices
     pages_list.sort(key=lambda x : x[0])
-    print("-> OK : Found {} pages in {}".format(len(pages_list, cached_pages_dir)))
+    print("-> OK : Found {} pages in {}".format(len(pages_list), cached_pages_dir))
 
     for page in pages_list :
         print("Analysing page {}".format(page[0]))
