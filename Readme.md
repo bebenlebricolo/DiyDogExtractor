@@ -23,6 +23,6 @@ python -m pip install -r requirements.txt
 
 ## Run the script
 Simply call the script as-is : `python main.py`.
-It will first download the pdf file locally and cache it in the [.cache](Sources/.cache/) directory, so that we don't need ti download it anymore after that.
+It will first download the pdf file locally and cache it in the [.cache](Sources/.cache/) directory (created upon first run), so that we don't need to download it anymore after that.
 Note that the downloading process will occur *next* to the script file, which was easier for development purposes. As such, the ***.cache** directory is ignored by git.
 
