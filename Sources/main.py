@@ -7,13 +7,17 @@ import json
 from pathlib import Path
 import PyPDF2
 from PyPDF2 import PageObject, PdfFileWriter
-
 from dataclasses import dataclass, field
 from copy import copy
 import struct
 import pickle
-from io import BufferedReader
 from typing import Optional
+
+
+import io
+from io import BufferedReader
+
+from PIL import Image
 
 C_DIYDOG_URL = "https://brewdogmedia.s3.eu-west-2.amazonaws.com/docs/2019+DIY+DOG+-+V8.pdf"
 
@@ -160,6 +164,28 @@ def cache_single_pdf_page(filepath : Path, page : PageObject ) :
     with open(filepath, "wb") as file :
         pdf_writer.write(file)
 
+def cache_images(directory : Path, page : PageObject) :
+    if not directory.exists() :
+        directory.mkdir(parents=True)
+
+    try :
+        for image in page.images:
+            image_name = Path(image.name).stem
+            image_path = directory.joinpath(image_name + ".png")
+            try :
+                decoded = Image.open(io.BytesIO(image.data)).convert(mode="RGBA")
+                decoded.save(image_path, format="PNG")
+
+            except Exception as e :
+                print("Caught error while caching images for page {}".format(directory.name))
+                print(e)
+                continue
+
+    # Sometimes we can't even list the images because of some weird errors ealier in the pdf parsing methods
+    except Exception as e :
+        print("Caught error while caching images for page {}".format(directory.name))
+        print(e)
+
 def retrieve_single_page_from_cache(filepath : Path) -> list[TextBlock] :
     blocks : list[TextBlock] = []
     with open(filepath, "rb") as file :
@@ -184,12 +210,13 @@ def list_pages(directory : Path, radical : str, extension : str = ".pdf") -> lis
 
 
 def main() :
-    force_caching = False
+    force_caching = True
 
     this_dir = Path(__file__).parent
     cache_directory = this_dir.joinpath(".cache")
     cached_pages_dir = cache_directory.joinpath("pages")
     cached_blocks_dir = cache_directory.joinpath("blocks")
+    cached_images_dir = cache_directory.joinpath("images")
 
     pdf_file = cache_directory.joinpath("diydog-2022.pdf")
     if not pdf_file.exists() :
@@ -211,10 +238,14 @@ def main() :
             end_page = 436
 
             for i in range(start_page, end_page) :
-                print("Extracting page : {}".format(i))
+                beer_index = i - start_page + 1
+                print("Extracting page : {}, beer index : {}".format(i, beer_index))
+                encoded_name = "page_{}".format(beer_index)
                 page = reader.getPage(i)
                 print("Caching page to disk")
-                cache_single_pdf_page(cached_pages_dir.joinpath("page_{}.pdf".format(i)), page=page)
+                cache_single_pdf_page(cached_pages_dir.joinpath(encoded_name + ".pdf"), page=page)
+                page_images_dir = cached_images_dir.joinpath(encoded_name)
+                cache_images(page_images_dir, page)
         print("-> OK : Pages extracted successfully in {}".format(cached_pages_dir))
 
     # List already cached pages
