@@ -164,6 +164,17 @@ def cache_single_pdf_page(filepath : Path, page : PageObject ) :
     with open(filepath, "wb") as file :
         pdf_writer.write(file)
 
+def cache_pdf_contents(filepath : Path, page : PageObject) :
+    if not filepath.parent.exists() :
+        filepath.parent.mkdir(parents=True)
+
+    contents = page.get_contents()
+    raw_data : bytes = contents.get_data()
+    str_contents = raw_data.decode()
+    with open(filepath, "w") as file :
+        file.writelines(str_contents)
+
+
 def cache_images(directory : Path, page : PageObject) :
     if not directory.exists() :
         directory.mkdir(parents=True)
@@ -217,6 +228,9 @@ def main() :
     cached_pages_dir = cache_directory.joinpath("pages")
     cached_blocks_dir = cache_directory.joinpath("blocks")
     cached_images_dir = cache_directory.joinpath("images")
+    # Pages decoded content with PyPDF2 library
+    cached_content_dir = cache_directory.joinpath("contents")
+    cached_content_dir = cache_directory.joinpath("custom_blocks")
 
     pdf_file = cache_directory.joinpath("diydog-2022.pdf")
     if not pdf_file.exists() :
@@ -246,6 +260,8 @@ def main() :
                 cache_single_pdf_page(cached_pages_dir.joinpath(encoded_name + ".pdf"), page=page)
                 page_images_dir = cached_images_dir.joinpath(encoded_name)
                 cache_images(page_images_dir, page)
+                contents_filepath = cached_content_dir.joinpath(encoded_name + ".txt")
+                cache_pdf_contents(contents_filepath, page)
         print("-> OK : Pages extracted successfully in {}".format(cached_pages_dir))
 
     # List already cached pages
