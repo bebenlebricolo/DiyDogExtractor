@@ -3,6 +3,7 @@
 import sys
 import os
 import requests
+import json
 from pathlib import Path
 import PyPDF2
 from PyPDF2 import PageObject, PdfFileWriter
@@ -36,9 +37,21 @@ def download_pdf(url : str, output_file : Path) -> None:
 
 # Useful doc : https://pypdf2.readthedocs.io/en/latest/user/extract-text.html
 
+class Jsonable :
+    def _read_prop(self, key : str, content : dict, default) :
+        if key in content :
+            return content[key]
+        return default
+
+    def to_json(self) -> dict :
+        pass
+
+    def from_json(self, content) -> None :
+        pass
+
 
 @dataclass
-class TextBlock :
+class TextBlock(Jsonable) :
     text : str = ""
     transformation_matrix = None
     current_matrix = None
@@ -49,16 +62,51 @@ class TextBlock :
         struct.pack()
         return pickle.dumps(self)
 
+    def to_json(self) -> dict :
+        return {
+            "text" : self.text,
+            "tm" : self.transformation_matrix,
+            "cm" : self.current_matrix,
+            "x" : self.x,
+            "y" : self.y
+        }
+
+    def from_json(self, content : dict) -> None :
+        self.text = self._read_prop("text", content, "")
+        self.transformation_matrix = self._read_prop("tm", content, [0,0,0,0,0,0])
+        self.current_matrix = self._read_prop("cm", content, [0,0,0,0,0,0])
+        self.x = self._read_prop("x", content, 0.0)
+        self.y = self._read_prop("y", content, 0.0)
+
     def from_buffer(self, buffer : BufferedReader) :
         self = pickle.load(buffers=buffer)
 
 @dataclass
-class PageBlocks :
+class PageBlocks(Jsonable) :
     blocks : list[TextBlock] = field(default_factory=list)
     index : int = 0
 
     def reset(self) :
         self.__init__()
+
+    def to_json(self) -> dict:
+        blocks_list = []
+        for block  in self.blocks :
+            blocks_list.append(block.to_json())
+        return {
+            "index" : self.index,
+            "blocks" : blocks_list
+        }
+
+    def from_json(self, content) -> None:
+        self.blocks.clear()
+        self.index = self._read_prop("index", content, 0)
+        if "blocks" in content :
+            for block in content["blocks"] :
+                new_block = TextBlock()
+                new_block.from_json(block)
+                self.blocks.append(new_block)
+
 
     def get_last_block(self) -> Optional[TextBlock] :
         if len(self.blocks) != 0 :
@@ -95,9 +143,13 @@ def cache_page_blocks(filepath : Path, page : PageBlocks ) :
     if not filepath.parent.exists() :
         filepath.parent.mkdir(parents=True)
 
-    with open(filepath, "wb") as file :
-        for block in page.blocks :
-            pickle.dump(block, file)
+    # with open(filepath, "wb") as file :
+    #     for block in page.blocks :
+    #         pickle.dump(block, file)
+
+    with open(filepath, "w") as file :
+        json.dump(page.to_json(), file, indent=4)
+
 
 def cache_single_pdf_page(filepath : Path, page : PageObject ) :
     if not filepath.parent.exists() :
@@ -116,6 +168,20 @@ def retrieve_single_page_from_cache(filepath : Path) -> list[TextBlock] :
             block = TextBlock()
             block.from_buffer(buffer=file)
             blocks.append(block)
+
+def list_pages(directory : Path, radical : str, extension : str = ".pdf") -> list :
+    pages_list : list[tuple[int, Path]] = []
+    for (dirpath, _, filenames) in os.walk(directory) :
+        for file in filenames :
+            if file.endswith(extension) :
+                filepath = Path(dirpath).joinpath(file)
+                index = int(file.lstrip(radical).rstrip(extension))
+                pages_list.append((index, filepath))
+    # Sort by indices
+    pages_list.sort(key=lambda x : x[0])
+    return pages_list
+
+
 
 def main() :
     force_caching = False
@@ -152,38 +218,50 @@ def main() :
         print("-> OK : Pages extracted successfully in {}".format(cached_pages_dir))
 
     # List already cached pages
-    pages_list : list[tuple[int, Path]] = []
     print("Listing available pdf pages ...")
-    for (dirpath, _, filenames) in os.walk(cached_pages_dir) :
-        for file in filenames :
-            if file.endswith(".pdf") :
-                filepath = Path(dirpath).joinpath(file)
-                index = int(file.lstrip("page_").rstrip(".pdf"))
-                pages_list.append((index, filepath))
-    # Sort by indices
-    pages_list.sort(key=lambda x : x[0])
+    pages_list = list_pages(cached_pages_dir, "page_", ".pdf")
     print("-> OK : Found {} pages in {}".format(len(pages_list), cached_pages_dir))
 
-    for page in pages_list :
-        print("Analysing page {}".format(page[0]))
-        with open(page[1], "rb") as file :
-            reader = PyPDF2.PdfFileReader(file)
-            parsed = reader.getPage(0)
-            page_blocks.index = page[0]
+    blocks_list : list[tuple[int, Path]] = []
+    if cached_blocks_dir.exists() :
+        blocks_list = list_pages(cached_blocks_dir, "blocks_", ".json")
+    else :
+        cached_blocks_dir.mkdir(parents=True)
 
-            text = parsed.extract_text(visitor_text=text_block_from_page)
-            last_block = page_blocks.get_last_block()
-            all_blocks.append(copy(page_blocks))
+    # Recache pages in case length differ
+    if len(blocks_list) != len(pages_list) :
+        # Skip caching pages
+        for page in pages_list :
+            print("Analysing page {}".format(page[0]))
+            with open(page[1], "rb") as file :
+                reader = PyPDF2.PdfFileReader(file)
+                parsed = reader.getPage(0)
+                page_blocks.index = page[0]
 
-            print("Caching page and contents ...")
-            cache_page_blocks(cached_blocks_dir, page_blocks)
-            print("-> OK : Successfully cached page text blocks.")
+                text = parsed.extract_text(visitor_text=text_block_from_page)
+                last_block = page_blocks.get_last_block()
+                all_blocks.append(copy(page_blocks))
 
-            page_blocks.reset()
+                print("Caching page and contents ...")
+                cache_page_blocks(cached_blocks_dir.joinpath("blocks_{}.json".format(page_blocks.index)), page_blocks)
+                print("-> OK : Successfully cached page text blocks.")
+
+                page_blocks.reset()
 
 
-        print("Done parsing content")
+            print("Done parsing content")
+    else :
+        # Read back pages
+        print("Loading back cached data from disk")
+        all_blocks.clear()
+        for block in blocks_list :
+            blocks = PageBlocks()
+            print("Loading {} from disk ...".format(block[1].name))
+            with open(block[1], "r") as file :
+                blocks.from_json(json.load(file))
+            all_blocks.append(blocks)
 
+    print("Done !")
 
 if __name__ == "__main__" :
     try :
