@@ -2,6 +2,7 @@
 
 import sys
 import os
+import re
 import requests
 import json
 from pathlib import Path
@@ -84,6 +85,24 @@ class TextBlock(Jsonable) :
 
     def from_buffer(self, buffer : BufferedReader) :
         self = pickle.load(buffers=buffer)
+
+@dataclass
+class TextElement(Jsonable) :
+    text : str = ""
+    x : float = 0.0
+    y : float = 0.0
+
+    def to_json(self) -> dict:
+        return {
+            "text" : self.text,
+            "x" : self.x,
+            "y" : self.y
+        }
+
+    def from_json(self, content) -> None:
+        self.text = self._read_prop("text", content, "")
+        self.x = self._read_prop("x", content, 0.0)
+        self.y = self._read_prop("y", content, 0.0)
 
 @dataclass
 class PageBlocks(Jsonable) :
@@ -219,6 +238,56 @@ def list_pages(directory : Path, radical : str, extension : str = ".pdf") -> lis
     return pages_list
 
 
+def extract_raw_text_blocks_from_content(contents : str) -> list[list[str]] :
+    """Extracts text blocks (raw) from input text contents. This essentially uses the BT ET parts and splits blocks based on this"""
+    text_block_parsing = False
+    out : list[list[str]] = []
+    current : list[str] = []
+    for line in contents.split("\n") :
+        if text_block_parsing :
+            if line == "ET" :
+                # Finishing parsing this block
+                text_block_parsing = False
+                out.append(current)
+                current = []
+            else :
+                current.append(line)
+
+        # Look for starting patterns
+        else :
+            if line == "BT" :
+                text_block_parsing = True
+
+    return out
+
+def text_blocks_from_raw_blocks(raw_blocks : list[list[str]]) -> list[TextElement] :
+    out : list[TextElement] = []
+    #pattern = r"[\[]?\(([a-zA-Z 0-9#,%\.]*)\)[\]]?"
+    pattern = r"[\[]?\(([\w\s\d\?\.,'#;!]*)\)[\]]?"
+    regex = re.compile(pattern)
+    current_tm : list[float] = [0,0,0,0,0,0]
+    for blocks in raw_blocks :
+        for line in blocks :
+            if line.find("TJ") != -1 or line.find("Tj") != -1 :
+                new_element = TextElement()
+                matches = regex.findall(line)
+                for match in matches:
+                    new_element.text += match
+                new_element.text = new_element.text.rstrip()
+                new_element.x = current_tm[4]
+                new_element.y = current_tm[5]
+                out.append(new_element)
+
+            # Todo implement Tm parsing
+            elif line.find("Tm") != -1:
+                tokens = line.split()
+                tm_index = tokens.index("Tm")
+                current_tm = tokens[(tm_index - 6) : tm_index]
+
+    return out
+
+
+
 
 def main() :
     force_caching = True
@@ -230,7 +299,7 @@ def main() :
     cached_images_dir = cache_directory.joinpath("images")
     # Pages decoded content with PyPDF2 library
     cached_content_dir = cache_directory.joinpath("contents")
-    cached_content_dir = cache_directory.joinpath("custom_blocks")
+    cached_custom_blocks = cache_directory.joinpath("custom_blocks")
 
     pdf_file = cache_directory.joinpath("diydog-2022.pdf")
     if not pdf_file.exists() :
@@ -262,6 +331,19 @@ def main() :
                 cache_images(page_images_dir, page)
                 contents_filepath = cached_content_dir.joinpath(encoded_name + ".txt")
                 cache_pdf_contents(contents_filepath, page)
+                custom_blocks_filepath = cached_custom_blocks.joinpath(encoded_name + ".json")
+
+                str_contents = bytes(page.get_contents().get_data()).decode()
+                raw_blocks = extract_raw_text_blocks_from_content(str_contents)
+                text_blocks = text_blocks_from_raw_blocks(raw_blocks)
+                with open(custom_blocks_filepath, "w") as file :
+                    data = []
+                    for block in text_blocks :
+                        data.append(block.to_json())
+                    json.dump(data, file, indent=4)
+
+
+
         print("-> OK : Pages extracted successfully in {}".format(cached_pages_dir))
 
     # List already cached pages
