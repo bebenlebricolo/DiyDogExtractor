@@ -1,5 +1,5 @@
 import unittest
-from .parsing import parse_line, escape_content
+from ..Utils.parsing import parse_line, escape_content
 
 class TestParsing(unittest.TestCase) :
     def test_parse_line(self) :

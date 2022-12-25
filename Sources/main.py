@@ -20,7 +20,9 @@ from io import BufferedReader
 
 from PIL import Image
 
-from parsing import parse_line
+from .Utils.parsing import parse_line
+from .Models.jsonable import Jsonable
+
 
 C_DIYDOG_URL = "https://brewdogmedia.s3.eu-west-2.amazonaws.com/docs/2019+DIY+DOG+-+V8.pdf"
 
@@ -43,18 +45,6 @@ def download_pdf(url : str, output_file : Path) -> None:
 
 
 # Useful doc : https://pypdf2.readthedocs.io/en/latest/user/extract-text.html
-
-class Jsonable :
-    def _read_prop(self, key : str, content : dict, default) :
-        if key in content :
-            return content[key]
-        return default
-
-    def to_json(self) -> dict :
-        pass
-
-    def from_json(self, content) -> None :
-        pass
 
 
 @dataclass
@@ -147,18 +137,6 @@ class PageBlocks(Jsonable) :
         if len(self.blocks) != 0 :
             return self.blocks[len(self.blocks) - 1]
         return None
-
-def text_block_from_page(text : str, cm, tm, font_dict, font_size) :
-    text = text.strip().rstrip("\n")
-    if text == "" or text == " " :
-        return
-    block = TextBlock()
-    block.text = text
-    block.current_matrix = cm
-    block.transformation_matrix = tm
-    block.x = tm[4]
-    block.y = tm[5]
-    page_blocks.blocks.append(block)
 
 
 def cache_all_blocks(directory : Path, block_list : list[PageBlocks]) :
@@ -406,6 +384,8 @@ def main() :
             data = json.load(file)
             page_blocks.from_json(data)
         pages_content.append(page_blocks)
+
+
 
     print("Done !")
 
