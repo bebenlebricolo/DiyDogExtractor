@@ -20,6 +20,8 @@ from io import BufferedReader
 
 from PIL import Image
 
+from parsing import parse_line
+
 C_DIYDOG_URL = "https://brewdogmedia.s3.eu-west-2.amazonaws.com/docs/2019+DIY+DOG+-+V8.pdf"
 
 def download_pdf(url : str, output_file : Path) -> None:
@@ -105,9 +107,10 @@ class TextElement(Coordinates) :
 
     def to_json(self) -> dict:
         parent_dict = super().to_json()
-        return parent_dict.update({
+        parent_dict.update({
             "text" : self.text
         })
+        return parent_dict
 
     def from_json(self, content) -> None:
         super().from_json(content)
@@ -115,7 +118,7 @@ class TextElement(Coordinates) :
 
 @dataclass
 class PageBlocks(Jsonable) :
-    blocks : list[TextBlock] = field(default_factory=list)
+    blocks : list[TextElement] = field(default_factory=list)
     index : int = 0
 
     def reset(self) :
@@ -144,9 +147,6 @@ class PageBlocks(Jsonable) :
         if len(self.blocks) != 0 :
             return self.blocks[len(self.blocks) - 1]
         return None
-
-all_blocks : list[PageBlocks] = []
-page_blocks : PageBlocks = PageBlocks()
 
 def text_block_from_page(text : str, cm, tm, font_dict, font_size) :
     text = text.strip().rstrip("\n")
@@ -234,7 +234,7 @@ def retrieve_single_page_from_cache(filepath : Path) -> list[TextBlock] :
             block.from_buffer(buffer=file)
             blocks.append(block)
 
-def list_pages(directory : Path, radical : str, extension : str = ".pdf") -> list :
+def list_pages(directory : Path, radical : str, extension : str = ".pdf") -> list[tuple[int, Path]] :
     pages_list : list[tuple[int, Path]] = []
     for (dirpath, _, filenames) in os.walk(directory) :
         for file in filenames :
@@ -278,18 +278,14 @@ def text_blocks_from_raw_blocks(raw_blocks : list[list[str]]) -> list[TextElemen
     #  [( Ad)-18 (d)]TJ
     #  [(A)47 (ttribut)18 (e)]TJ
     #
-    pattern = r"[\[]?\(([\w\s\d\?\.,'#;!%\\/]*)\)[\]]?"
-    regex = re.compile(pattern)
     current_coords = Coordinates()
     for blocks in raw_blocks :
         for line in blocks :
 
             if line.find("TJ") != -1 or line.find("Tj") != -1 :
                 new_element = TextElement()
-                matches = regex.findall(line)
-                for match in matches:
-                    new_element.text += match
-                new_element.text = new_element.text.rstrip()
+                parsed_line = parse_line(line)
+                new_element.text = parsed_line.rstrip()
                 new_element.x = current_coords.x
                 new_element.y = current_coords.y
                 out.append(new_element)
@@ -324,16 +320,16 @@ def cache_custom_blocks(filepath : Path, text_blocks : list[TextElement]) :
 
 
 def main() :
-    force_caching = True
+    force_caching = False
 
     this_dir = Path(__file__).parent
     cache_directory = this_dir.joinpath(".cache")
     cached_pages_dir = cache_directory.joinpath("pages")
-    cached_blocks_dir = cache_directory.joinpath("blocks")
+    #cached_blocks_dir = cache_directory.joinpath("blocks")
     cached_images_dir = cache_directory.joinpath("images")
     # Pages decoded content with PyPDF2 library
     cached_content_dir = cache_directory.joinpath("contents")
-    cached_custom_blocks = cache_directory.joinpath("custom_blocks")
+    #cached_custom_blocks = cache_directory.joinpath("custom_blocks")
 
     pdf_file = cache_directory.joinpath("diydog-2022.pdf")
     if not pdf_file.exists() :
@@ -342,6 +338,8 @@ def main() :
         print("-> OK : Downloading succeeded ! Pdf file was downloaded at : {}".format(pdf_file))
         # Triggers force caching because we need to regenerate everything
         force_caching = True
+
+    pages_content : list[PageBlocks] = []
 
     # Extract pages for caching purposes
     if force_caching :
@@ -363,14 +361,24 @@ def main() :
                 cache_single_pdf_page(cached_pages_dir.joinpath(encoded_name + ".pdf"), page=page)
                 page_images_dir = cached_images_dir.joinpath(encoded_name)
                 cache_images(page_images_dir, page)
-                contents_filepath = cached_content_dir.joinpath(encoded_name + ".txt")
-                cache_pdf_contents(contents_filepath, page)
-                custom_blocks_filepath = cached_custom_blocks.joinpath(encoded_name + ".json")
+                # contents_filepath = cached_content_dir.joinpath(encoded_name + ".txt")
+                # cache_pdf_contents(contents_filepath, page)
+                custom_blocks_filepath = cached_content_dir.joinpath(encoded_name + ".json")
 
+
+                # Fetch raw contents and manually parse it (works better than brute text extraction from pypdf2)
+                print("Extracting textual content of page ...")
                 str_contents = bytes(page.get_contents().get_data()).decode("utf-8")
                 raw_blocks = extract_raw_text_blocks_from_content(str_contents)
                 text_blocks = text_blocks_from_raw_blocks(raw_blocks)
                 cache_custom_blocks(custom_blocks_filepath, text_blocks)
+
+                # Adding page blocks now, so that we
+                # don't have to parse them again
+                page_blocks = PageBlocks()
+                page_blocks.blocks = text_blocks
+                page_blocks.index = beer_index
+                pages_content.append(page_blocks)
 
 
 
@@ -381,44 +389,23 @@ def main() :
     pages_list = list_pages(cached_pages_dir, "page_", ".pdf")
     print("-> OK : Found {} pages in {}".format(len(pages_list), cached_pages_dir))
 
-    blocks_list : list[tuple[int, Path]] = []
-    if cached_blocks_dir.exists() :
-        blocks_list = list_pages(cached_blocks_dir, "blocks_", ".json")
-    else :
-        cached_blocks_dir.mkdir(parents=True)
+    print("Listing available json content from pages ...")
+    pages_content_list = list_pages(cached_content_dir, "page_", ".json")
+    print("-> OK : Found {} pages in {}".format(len(pages_list), cached_pages_dir))
+    for page in pages_content_list :
+        page_index = page[0]
+        found_elem = [x for x in pages_content if  x.index == page_index ]
+        # Skip deserialization if it already exist in memory
+        if len(found_elem) != 0 :
+            continue
 
-    # Recache pages in case length differ
-    if len(blocks_list) != len(pages_list) :
-        # Skip caching pages
-        for page in pages_list :
-            print("Analysing page {}".format(page[0]))
-            with open(page[1], "rb") as file :
-                reader = PyPDF2.PdfFileReader(file)
-                parsed = reader.getPage(0)
-                page_blocks.index = page[0]
-
-                text = parsed.extract_text(visitor_text=text_block_from_page)
-                last_block = page_blocks.get_last_block()
-                all_blocks.append(copy(page_blocks))
-
-                print("Caching page and contents ...")
-                cache_page_blocks(cached_blocks_dir.joinpath("blocks_{}.json".format(page_blocks.index)), page_blocks)
-                print("-> OK : Successfully cached page text blocks.")
-
-                page_blocks.reset()
-
-
-            print("Done parsing content")
-    else :
-        # Read back pages
-        print("Loading back cached data from disk")
-        all_blocks.clear()
-        for block in blocks_list :
-            blocks = PageBlocks()
-            print("Loading {} from disk ...".format(block[1].name))
-            with open(block[1], "r") as file :
-                blocks.from_json(json.load(file))
-            all_blocks.append(blocks)
+        print("Reading back cached text content from json file {}".format(page[1].name))
+        page_blocks = PageBlocks()
+        page_blocks.index = page_index
+        with open(page[1], "r") as file :
+            data = json.load(file)
+            page_blocks.from_json(data)
+        pages_content.append(page_blocks)
 
     print("Done !")
 
