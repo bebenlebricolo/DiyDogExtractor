@@ -56,53 +56,62 @@ class Jsonable :
 
 
 @dataclass
-class TextBlock(Jsonable) :
+class Coordinates(Jsonable) :
+    x : float = 0.0
+    y : float = 0.0
+
+    def to_json(self) -> dict:
+        return {
+            "x" : self.x,
+            "y" : self.y
+        }
+
+    def from_json(self, content) -> None:
+        self.x = self._read_prop("x", content, 0.0)
+        self.y = self._read_prop("y", content, 0.0)
+
+@dataclass
+class TextBlock(Coordinates) :
     text : str = ""
     transformation_matrix = None
     current_matrix = None
-    x : float = 0.0
-    y : float = 0.0
 
     def to_bytes(self) -> bytes :
         struct.pack()
         return pickle.dumps(self)
 
     def to_json(self) -> dict :
-        return {
+        parent_dict = super().to_json()
+        parent_dict.update({
             "text" : self.text,
             "tm" : self.transformation_matrix,
             "cm" : self.current_matrix,
-            "x" : self.x,
-            "y" : self.y
-        }
+            }
+        )
+        return parent_dict
 
     def from_json(self, content : dict) -> None :
+        super().from_json(content)
         self.text = self._read_prop("text", content, "")
         self.transformation_matrix = self._read_prop("tm", content, [0,0,0,0,0,0])
         self.current_matrix = self._read_prop("cm", content, [0,0,0,0,0,0])
-        self.x = self._read_prop("x", content, 0.0)
-        self.y = self._read_prop("y", content, 0.0)
 
     def from_buffer(self, buffer : BufferedReader) :
         self = pickle.load(buffers=buffer)
 
 @dataclass
-class TextElement(Jsonable) :
+class TextElement(Coordinates) :
     text : str = ""
-    x : float = 0.0
-    y : float = 0.0
 
     def to_json(self) -> dict:
-        return {
-            "text" : self.text,
-            "x" : self.x,
-            "y" : self.y
-        }
+        parent_dict = super().to_json()
+        return parent_dict.update({
+            "text" : self.text
+        })
 
     def from_json(self, content) -> None:
+        super().from_json(content)
         self.text = self._read_prop("text", content, "")
-        self.x = self._read_prop("x", content, 0.0)
-        self.y = self._read_prop("y", content, 0.0)
 
 @dataclass
 class PageBlocks(Jsonable) :
@@ -263,30 +272,55 @@ def extract_raw_text_blocks_from_content(contents : str) -> list[list[str]] :
 def text_blocks_from_raw_blocks(raw_blocks : list[list[str]]) -> list[TextElement] :
     out : list[TextElement] = []
     #pattern = r"[\[]?\(([a-zA-Z 0-9#,%\.]*)\)[\]]?"
-    pattern = r"[\[]?\(([\w\s\d\?\.,'#;!]*)\)[\]]?"
+
+    # This regular expression is used to match constructs like these ones :
+    #  (HOPS)Tj
+    #  [( Ad)-18 (d)]TJ
+    #  [(A)47 (ttribut)18 (e)]TJ
+    #
+    pattern = r"[\[]?\(([\w\s\d\?\.,'#;!%\\/]*)\)[\]]?"
     regex = re.compile(pattern)
-    current_tm : list[float] = [0,0,0,0,0,0]
+    current_coords = Coordinates()
     for blocks in raw_blocks :
         for line in blocks :
+
             if line.find("TJ") != -1 or line.find("Tj") != -1 :
                 new_element = TextElement()
                 matches = regex.findall(line)
                 for match in matches:
                     new_element.text += match
                 new_element.text = new_element.text.rstrip()
-                new_element.x = current_tm[4]
-                new_element.y = current_tm[5]
+                new_element.x = current_coords.x
+                new_element.y = current_coords.y
                 out.append(new_element)
 
-            # Todo implement Tm parsing
             elif line.find("Tm") != -1:
                 tokens = line.split()
                 tm_index = tokens.index("Tm")
-                current_tm = tokens[(tm_index - 6) : tm_index]
+                current_coords.x = round(float(tokens[tm_index - 2]), 4)
+                current_coords.y = round(float(tokens[tm_index - 1]), 4)
+
+            elif line.find("Td") != -1 or line.find("TD") != -1:
+                tokens = line.split()
+                td_index = tokens.index("Td")
+                if td_index == -1 :
+                    td_index = tokens.index("TD")
+
+                current_coords.x += round(float(tokens[td_index - 2]), 4)
+                current_coords.y += round(float(tokens[td_index - 1]), 4)
 
     return out
 
 
+def cache_custom_blocks(filepath : Path, text_blocks : list[TextElement]) :
+    if not filepath.parent.exists() :
+        filepath.parent.mkdir(parents=True)
+
+    with open(filepath, "w") as file :
+        data = []
+        for block in text_blocks :
+            data.append(block.to_json())
+        json.dump(data, file, indent=4)
 
 
 def main() :
@@ -333,14 +367,10 @@ def main() :
                 cache_pdf_contents(contents_filepath, page)
                 custom_blocks_filepath = cached_custom_blocks.joinpath(encoded_name + ".json")
 
-                str_contents = bytes(page.get_contents().get_data()).decode()
+                str_contents = bytes(page.get_contents().get_data()).decode("utf-8")
                 raw_blocks = extract_raw_text_blocks_from_content(str_contents)
                 text_blocks = text_blocks_from_raw_blocks(raw_blocks)
-                with open(custom_blocks_filepath, "w") as file :
-                    data = []
-                    for block in text_blocks :
-                        data.append(block.to_json())
-                    json.dump(data, file, indent=4)
+                cache_custom_blocks(custom_blocks_filepath, text_blocks)
 
 
 
@@ -397,3 +427,4 @@ if __name__ == "__main__" :
         main()
     except Exception as e :
         print("-> ERROR : Caught exception while running script, error was  : {}".format(e))
+        raise e
