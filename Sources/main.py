@@ -23,7 +23,7 @@ from PIL import Image
 
 from .Utils.parsing import parse_line
 from .Models.jsonable import Jsonable
-from .Models import recipe
+from .Models import recipe as rcp
 
 
 C_DIYDOG_URL = "https://brewdogmedia.s3.eu-west-2.amazonaws.com/docs/2019+DIY+DOG+-+V8.pdf"
@@ -141,26 +141,15 @@ class PageBlocks(Jsonable) :
         return None
 
 
-def cache_all_blocks(directory : Path, block_list : list[PageBlocks]) :
-    if not directory.exists() :
-        directory.mkdir(parents=True)
-
-    for blocks in block_list :
-        filepath = directory.joinpath("block_{}.bin".format(blocks.index))
-        cache_page_blocks(filepath, blocks)
-
-
-
-def cache_page_blocks(filepath : Path, page : PageBlocks ) :
+def cache_raw_blocks(filepath : Path, blocks : list[list[str]] ) :
     if not filepath.parent.exists() :
         filepath.parent.mkdir(parents=True)
 
-    # with open(filepath, "wb") as file :
-    #     for block in page.blocks :
-    #         pickle.dump(block, file)
-
     with open(filepath, "w") as file :
-        json.dump(page.to_json(), file, indent=4)
+        for block in blocks :
+            for line in block :
+                file.write(line + "\n")
+            file.write("\n")
 
 
 def cache_single_pdf_page(filepath : Path, page : PageObject ) :
@@ -308,6 +297,13 @@ def cache_contents(filepath : Path, page : PageBlocks) :
         data = page.to_json()
         json.dump(data, file, indent=4)
 
+def cache_pdf_raw_contents(filepath : Path, content : str) :
+    if not filepath.parent.exists() :
+        filepath.parent.mkdir(parents=True)
+
+    with open(filepath, "w") as file :
+        file.write(content)
+
 def find_closest_x_element(elements : list[TextElement], reference : TextElement) -> TextElement :
     min_distance = 1000
     closest : TextElement = elements[0]
@@ -341,7 +337,7 @@ def find_closest_element(elements : list[TextElement], reference : TextElement) 
 
     return closest
 
-def extract_header(elements : list[TextElement], recipe : recipe.Recipe) -> recipe.Recipe :
+def extract_header(elements : list[TextElement], recipe : rcp.Recipe) -> rcp.Recipe :
     # Sort list based on y indices, top to bottom
     consumed_elements : list[TextElement] = []
     elements.sort(key=lambda x : x.y, reverse=True )
@@ -427,7 +423,7 @@ def extract_header(elements : list[TextElement], recipe : recipe.Recipe) -> reci
 
     return recipe
 
-def extract_footer(elements : list[TextElement], recipe : recipe.Recipe) -> recipe.Recipe :
+def extract_footer(elements : list[TextElement], recipe : rcp.Recipe) -> rcp.Recipe :
     # Only extract page number
     for element in elements :
         if element.text.isnumeric() :
@@ -439,6 +435,12 @@ def find_element(elements : list[TextElement], text : str) -> Optional[TextEleme
         if element.text == text :
             return element
     return None
+
+def get_elem_index(elements : list[TextElement], text : str) -> int :
+    for i in range(0, len(elements)) :
+        if elements[i].text == text :
+            return i
+    return -1
 
 def filter_categories_and_content(reference_list : list[TextElement], elements : list[TextElement] ) -> list[list[TextElement]] :
     categorized_lists : list[list[TextElement]] = []
@@ -457,7 +459,85 @@ def filter_categories_and_content(reference_list : list[TextElement], elements :
         categorized_lists.append(current_category)
     return categorized_lists
 
-def extract_body(elements : list[TextElement], recipe : recipe.Recipe) -> recipe.Recipe :
+def parse_this_beer_is_category(elements : list[TextElement], recipe : rcp.Recipe) -> rcp.Recipe :
+    description = ""
+    # Pop the first element "THIS BEER IS", we don't want that in the description
+    for elem in elements[1:] :
+        description += elem.text + " "
+    recipe.description.text = description.strip()
+    return recipe
+
+def parse_basics_category(elements : list[TextElement], recipe : rcp.Recipe) -> rcp.Recipe :
+    return recipe
+
+def parse_method_timings_category(elements : list[TextElement], recipe : rcp.Recipe) -> rcp.Recipe :
+    return recipe
+
+def parse_ingredients_category(elements : list[TextElement], recipe : rcp.Recipe) -> rcp.Recipe :
+    malt_elem = find_element(elements, "MALT")
+    hops_elem = find_element(elements, "HOPS")
+    yeast_elem = find_element(elements, "YEAST")
+
+    # Beer without ingredients, the beer #89 is one of them
+    if not malt_elem and not hops_elem and not yeast_elem :
+        for elem in elements :
+            recipe.ingredients.description += elem.text + " "
+        recipe.ingredients.description = recipe.ingredients.description.strip()
+        return recipe
+
+    malt_data_list : list[TextElement] = []
+    hops_data_list : list[TextElement] = []
+    yeast_data_list : list[TextElement] = []
+
+    # Subcategorizing data
+    working_list : list[TextElement] = []
+    for element in elements :
+        if element == malt_elem :
+            working_list = malt_data_list
+            continue
+        if element == hops_elem :
+            working_list = hops_data_list
+            continue
+        if element == yeast_elem :
+            working_list = yeast_data_list
+            continue
+        working_list.append(element)
+
+    # Parse malts
+    malt_data_per_row = 3
+    recipe.ingredients.malts.clear()
+    for i in range(0, int(len(malt_data_list) / malt_data_per_row)) :
+        index = i * malt_data_per_row
+        dataset = [malt_data_list[index], malt_data_list[index + 1], malt_data_list[index + 2]]
+        # Sort items using the x component, left to right
+        dataset.sort(key=lambda x : x.x)
+        new_malt = rcp.Malt()
+        new_malt.name = dataset[0].text
+        new_malt.kgs = dataset[1].text
+        new_malt.lbs = dataset[2].text
+        recipe.ingredients.malts.append(new_malt)
+
+
+    # Parse hops
+    for hops_data in hops_data_list :
+        pass
+
+    # Parse yeast
+    for yeast_data in yeast_data_list :
+        pass
+
+    return recipe
+
+def parse_food_pairing_category(elements : list[TextElement], recipe : rcp.Recipe) -> rcp.Recipe :
+    return recipe
+
+def parse_brewers_tip_category(elements : list[TextElement], recipe : rcp.Recipe) -> rcp.Recipe :
+    return recipe
+
+def parse_packaging_category(elements : list[TextElement], recipe : rcp.Recipe) -> rcp.Recipe :
+    return recipe
+
+def extract_body(elements : list[TextElement], recipe : rcp.Recipe) -> rcp.Recipe :
     this_beer_is_elem   : TextElement = find_element(elements, "THIS BEER IS")
     basics_elem         : TextElement = find_element(elements, "BASICS")
     ingredients_elem    : TextElement = find_element(elements, "INGREDIENTS")
@@ -487,6 +567,15 @@ def extract_body(elements : list[TextElement], recipe : recipe.Recipe) -> recipe
     column_1_x_start = ingredients_elem.x - 20
     column_2_x_start = packaging_elem.x
 
+    # Find the misplaced "MALT" text element, which is written in a weird coordinate system
+    # And put that one right below the ingredients category
+    malt_elem = find_element(elements, "MALT")
+    if malt_elem :
+        malt_elem.x = ingredients_elem.x + 5
+        malt_elem.y = ingredients_elem.y - 10
+    # If there is no malt element, it means that the beer does not have detailed ingredients
+    # The beer #89 AB:19 is one of them and does not contain any ingredients
+
     # Filter elements based on their x coordinates
     column_0_elements : list[TextElement] = []
     column_1_elements : list[TextElement] = []
@@ -512,10 +601,40 @@ def extract_body(elements : list[TextElement], recipe : recipe.Recipe) -> recipe
     column_1_categories = filter_categories_and_content(references_list, column_1_elements)
     column_2_categories = filter_categories_and_content(references_list, column_2_elements)
 
+    # Perform all data parsing
+    for column_data in [column_0_categories, column_1_categories, column_2_categories] :
+        for category in column_data :
+            match category[0].text :
+                case "THIS BEER IS" :
+                    recipe = parse_this_beer_is_category(category, recipe)
+
+                case "BASICS" :
+                    recipe = parse_basics_category(category, recipe)
+
+                case "METHOD / TIMINGS" :
+                    recipe = parse_method_timings_category(category, recipe)
+
+                case "FOOD PAIRING" :
+                    recipe = parse_food_pairing_category(category, recipe)
+
+                case "INGREDIENTS" :
+                    recipe = parse_ingredients_category(category, recipe)
+
+                case "BREWER\x92S TIP" :
+                    recipe = parse_brewers_tip_category(category, recipe)
+
+                case "PACKAGING" :
+                    recipe = parse_packaging_category(category, recipe)
+
+                case _ :
+                    raise Exception("Caught unexpected category name : {}".format(category[0].text))
+
+
+
 
     return recipe
 
-def extract_recipe(page : PageBlocks) -> recipe.Recipe :
+def extract_recipe(page : PageBlocks) -> rcp.Recipe :
     header_y_limit = 660
     footer_y_limit = 50
 
@@ -531,11 +650,11 @@ def extract_recipe(page : PageBlocks) -> recipe.Recipe :
         else :
             body_elements.append(block)
 
-    out = recipe.Recipe()
+    out = rcp.Recipe()
     out = extract_header(header_elements, out)
     out = extract_footer(footer_elements, out)
     out = extract_body(body_elements, out)
-    return recipe.Recipe()
+    return rcp.Recipe()
 
 
 def main(args) :
@@ -547,7 +666,8 @@ def main(args) :
     this_dir = Path(__file__).parent
     cache_directory = this_dir.joinpath(".cache")
     cached_pages_dir = cache_directory.joinpath("pages")
-    #cached_blocks_dir = cache_directory.joinpath("blocks")
+    cached_blocks_dir = cache_directory.joinpath("blocks")
+    cached_pdf_raw_content = cache_directory.joinpath("pdf_raw_contents")
     cached_images_dir = cache_directory.joinpath("images")
     # Pages decoded content with PyPDF2 library
     cached_content_dir = cache_directory.joinpath("contents")
@@ -579,22 +699,30 @@ def main(args) :
                 print("Extracting page : {}, beer index : {}".format(i, beer_index))
                 encoded_name = "page_{}".format(beer_index)
                 page = reader.getPage(i)
-                print("Caching page to disk")
+
+                print("Caching page to disk ...")
                 cache_single_pdf_page(cached_pages_dir.joinpath(encoded_name + ".pdf"), page=page)
                 page_images_dir = cached_images_dir.joinpath(encoded_name)
+
+                print("Caching images to disk ...")
                 cache_images(page_images_dir, page)
-                # contents_filepath = cached_content_dir.joinpath(encoded_name + ".txt")
-                # cache_pdf_contents(contents_filepath, page)
                 content_filepath = cached_content_dir.joinpath(encoded_name + ".json")
 
 
                 # Fetch raw contents and manually parse it (works better than brute text extraction from pypdf2)
                 print("Extracting textual content of page ...")
                 str_contents = bytes(page.get_contents().get_data()).decode("utf-8")
+                cache_pdf_raw_contents(cached_pdf_raw_content.joinpath(encoded_name + ".txt"), str_contents )
+
                 raw_blocks = extract_raw_text_blocks_from_content(str_contents)
+                print("Caching raw text blocks ...")
+                cache_raw_blocks(cached_blocks_dir.joinpath(encoded_name + ".txt"), raw_blocks )
+
+                print("Parsing raw text blocks into pre-processed text blocks")
                 text_blocks = text_blocks_from_raw_blocks(raw_blocks)
 
                 # Post processing of text blocks :
+                print("Post processing text blocks ...")
                 temp_blocks = []
                 for block in text_blocks :
                     # Strip whitespaces and removes empty items
@@ -604,6 +732,7 @@ def main(args) :
 
                 text_blocks = temp_blocks
 
+                print("Caching preprocessed contents ...")
                 # Adding page blocks now, so that we
                 # don't have to parse them again
                 page_blocks = PageBlocks()
@@ -640,7 +769,7 @@ def main(args) :
         pages_content.append(page_blocks)
 
     print("Parsing actual recipe content from extracted text blocks")
-    recipes_list : list[recipe.Recipe] = []
+    recipes_list : list[rcp.Recipe] = []
     for page in pages_content :
         print("Parsing recipe from page {}".format(page.index))
         new_recipe = extract_recipe(page)
