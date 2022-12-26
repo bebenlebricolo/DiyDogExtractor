@@ -434,7 +434,85 @@ def extract_footer(elements : list[TextElement], recipe : recipe.Recipe) -> reci
             recipe.page_number = int(element.text)
     return recipe
 
+def find_element(elements : list[TextElement], text : str) -> Optional[TextElement] :
+    for element in elements :
+        if element.text == text :
+            return element
+    return None
+
+def filter_categories_and_content(reference_list : list[TextElement], elements : list[TextElement] ) -> list[list[TextElement]] :
+    categorized_lists : list[list[TextElement]] = []
+    current_category : list[TextElement] = []
+    for element in elements :
+        if element in reference_list :
+            # Start new category candidates filling
+            if len(current_category) != 0 :
+                categorized_lists.append(current_category)
+                current_category = []
+            current_category.append(element)
+        else :
+            current_category.append(element)
+    # Pop the last items
+    if len(current_category) != 0 :
+        categorized_lists.append(current_category)
+    return categorized_lists
+
 def extract_body(elements : list[TextElement], recipe : recipe.Recipe) -> recipe.Recipe :
+    this_beer_is_elem   : TextElement = find_element(elements, "THIS BEER IS")
+    basics_elem         : TextElement = find_element(elements, "BASICS")
+    ingredients_elem    : TextElement = find_element(elements, "INGREDIENTS")
+    food_pairing_elem   : TextElement = find_element(elements, "FOOD PAIRING")
+    method_timings_elem : TextElement = find_element(elements, "METHOD / TIMINGS")
+    brewers_tip_elem    : TextElement = find_element(elements, "BREWER\x92S TIP")
+    packaging_elem      : TextElement = find_element(elements, "PACKAGING")
+
+    # List of known good references/categories
+    # This will be used in order to filter embedded data
+    # and to discriminate categories start from other content
+    references_list = [
+        this_beer_is_elem,
+        basics_elem,
+        ingredients_elem,
+        food_pairing_elem,
+        method_timings_elem,
+        brewers_tip_elem,
+        packaging_elem
+    ]
+
+    # Offsetting a little bit, because formatting of pdf
+    # page sometimes align words differently because of character spacing being inconsistent
+    # For instance, "THIS BEER IS" is located a little bit more right that "BASICS", despite
+    # being perfectly aligned to the eye on the final rendered page
+    column_0_x_start = this_beer_is_elem.x - 20
+    column_1_x_start = ingredients_elem.x - 20
+    column_2_x_start = packaging_elem.x
+
+    # Filter elements based on their x coordinates
+    column_0_elements : list[TextElement] = []
+    column_1_elements : list[TextElement] = []
+    column_2_elements : list[TextElement] = []
+    for element in elements :
+        if element.x < column_1_x_start :
+            column_0_elements.append(element)
+            continue
+        if element.x >= column_1_x_start and element.x < column_2_x_start :
+            column_1_elements.append(element)
+            continue
+        if element.x >= column_2_x_start :
+            column_2_elements.append(element)
+            continue
+
+    # Sort items by y position (Top to bottom)
+    column_0_elements.sort(key=lambda x : x.y, reverse=True)
+    column_1_elements.sort(key=lambda x : x.y, reverse=True)
+    column_2_elements.sort(key=lambda x : x.y, reverse=True)
+
+    # Extract categories and content for each column
+    column_0_categories = filter_categories_and_content(references_list, column_0_elements)
+    column_1_categories = filter_categories_and_content(references_list, column_1_elements)
+    column_2_categories = filter_categories_and_content(references_list, column_2_elements)
+
+
     return recipe
 
 def extract_recipe(page : PageBlocks) -> recipe.Recipe :
