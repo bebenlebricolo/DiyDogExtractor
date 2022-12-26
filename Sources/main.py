@@ -513,8 +513,8 @@ def parse_ingredients_category(elements : list[TextElement], recipe : rcp.Recipe
         dataset.sort(key=lambda x : x.x)
         new_malt = rcp.Malt()
         new_malt.name = dataset[0].text
-        new_malt.kgs = dataset[1].text
-        new_malt.lbs = dataset[2].text
+        new_malt.kgs = float(dataset[1].text.replace("kg", ""))
+        new_malt.lbs = float(dataset[2].text.replace("lb", ""))
         recipe.ingredients.malts.append(new_malt)
 
 
