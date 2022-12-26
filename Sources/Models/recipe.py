@@ -31,9 +31,10 @@ class Basics(Jsonable) :
     volume : Volume = field(default_factory=Volume)
     boil_volume : Volume = field(default_factory=Volume)
     abv : float = 0.0
-    target_og : int = 1000
-    target_fg : int = 1000
-    ebc : int = 0
+    target_og : float = 1000.0
+    target_fg : float = 1000.0
+    ebc : float = 0.0
+    ibu : float = 0.0
     srm : float = 0.0
     ph : float = 7.0
     attenuation_level : float = 80.0
@@ -46,6 +47,7 @@ class Basics(Jsonable) :
             "targetOg" : self.target_og,
             "targetFg" : self.target_fg,
             "ebc" : self.ebc,
+            "ibu" : self.ibu,
             "srm" : self.srm,
             "ph" : self.ph,
             "attenuationLevel" : self.attenuation_level
@@ -60,6 +62,7 @@ class Basics(Jsonable) :
         self.target_fg = self._read_prop("targetFg", content, 1000)
         self.target_og = self._read_prop("targetOg", content, 1000)
         self.ebc = self._read_prop("ebc", content, 0)
+        self.ibu = self._read_prop("ibu", content, 0)
         self.srm = self._read_prop("srm", content, 0.0)
         self.ph = self._read_prop("ph", content, 7.0)
         self.attenuation_level = self._read_prop("attenuationLevel", content, 80.0)
@@ -242,11 +245,12 @@ class Packaging(Jsonable) :
 
 @dataclass
 class Recipe(Jsonable) :
-    name : str = ""
-    number : int = 0
-    tags : list[str] = field(default_factory=list)
-    first_brewed : str = ""
-    ibu : float = 0.0
+    name : str = ""                                 # Beer title
+    number : int = 0                                # Refers to the "#1" tag
+    page_number : int = 0                           # page number as parsed from pdf page
+    tags : list[str] = field(default_factory=list)  # tag line
+    first_brewed : str = ""                         # Date of first brew
+    # ibu -> Ibus are stored within the "Basics" object, despite not 100% matching the recipe it makes sense to have it there instead
     image : str = "" # Ref to file with image
     original_pdf_page : str = "" # Ref to original pdf page extracted from DiyDog book
     description : Description = field(default_factory=Description)
@@ -261,9 +265,9 @@ class Recipe(Jsonable) :
         return {
             "name" : self.name,
             "number" : self.number,
+            "pageNumber" : self.page_number,
             "tags" : self.tags,
             "firstBrewed" : self.first_brewed,
-            "ibu" : self.ibu,
             "image" : self.image,
             "originalPdfPage" : self.original_pdf_page,
             "description" : self.description.to_json(),
@@ -274,3 +278,28 @@ class Recipe(Jsonable) :
             "methodTimings" : self.method_timings.to_json(),
             "packaging" : self.packaging.to_json()
         }
+
+    def from_json(self, content: dict) -> None:
+        self.name = self._read_prop("name", content, "")
+        self.number = self._read_prop("number", content, 0)
+        self.page_number = self._read_prop("pageNumber", content, 0)
+        self.tags = []
+        if "tags" in content :
+            for tag in content["tags"] :
+                self.tags.append(tag)
+        self.first_brewed = self._read_prop("firstBrewed", content, "")
+        self.image = self._read_prop("image", content, "")
+        self.original_pdf_page = self._read_prop("originalPdfPage", content, "")
+        self.description = self._read_prop("description", content, "")
+        if "basics" in content :
+            self.basics.from_json(content["basics"])
+        if "foodPairing" in content :
+            self.food_pairing.from_json(content["foodPairing"])
+        if "ingredients" in content :
+            self.ingredients.from_json(content["ingredients"])
+        if "brewersTip" in content :
+            self.brewers_tip.from_json(content["brewersTip"])
+        if "methodTimings" in content :
+            self.method_timings.from_json(content["methodTimings"])
+        if "packaging" in content :
+            self.packaging.from_json(content["packaging"])

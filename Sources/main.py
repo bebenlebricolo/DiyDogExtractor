@@ -2,6 +2,7 @@
 
 import sys
 import os
+import math
 import re
 import requests
 import json
@@ -22,6 +23,7 @@ from PIL import Image
 
 from .Utils.parsing import parse_line
 from .Models.jsonable import Jsonable
+from .Models import recipe
 
 
 C_DIYDOG_URL = "https://brewdogmedia.s3.eu-west-2.amazonaws.com/docs/2019+DIY+DOG+-+V8.pdf"
@@ -249,30 +251,32 @@ def extract_raw_text_blocks_from_content(contents : str) -> list[list[str]] :
 
 def text_blocks_from_raw_blocks(raw_blocks : list[list[str]]) -> list[TextElement] :
     out : list[TextElement] = []
-    #pattern = r"[\[]?\(([a-zA-Z 0-9#,%\.]*)\)[\]]?"
-
-    # This regular expression is used to match constructs like these ones :
-    #  (HOPS)Tj
-    #  [( Ad)-18 (d)]TJ
-    #  [(A)47 (ttribut)18 (e)]TJ
-    #
-    current_coords = Coordinates()
     for blocks in raw_blocks :
+        current_coords = Coordinates()
+        new_element : Optional[TextElement] = None
         for line in blocks :
-
             if line.find("TJ") != -1 or line.find("Tj") != -1 :
-                new_element = TextElement()
+                if not new_element :
+                    new_element = TextElement()
+                    new_element.x = current_coords.x
+                    new_element.y = current_coords.y
+
                 parsed_line = parse_line(line)
-                new_element.text = parsed_line.rstrip()
-                new_element.x = current_coords.x
-                new_element.y = current_coords.y
-                out.append(new_element)
+                # This is required as sometimes PDF can chain multiple "Tj" instructions with different formatting (like color)
+                # Without resetting the transformation matrix, so they need to be read as a single line instead
+                new_element.text += parsed_line
+                continue
 
             elif line.find("Tm") != -1:
                 tokens = line.split()
                 tm_index = tokens.index("Tm")
-                current_coords.x = round(float(tokens[tm_index - 2]), 4)
-                current_coords.y = round(float(tokens[tm_index - 1]), 4)
+                current_coords.x = float(tokens[tm_index - 2])
+                current_coords.y = float(tokens[tm_index - 1])
+
+                # New transformation matrix means a new PDF write somewhere else in the page, so we can bump the element if any
+                if new_element :
+                    out.append(new_element)
+                    new_element = None
 
             elif line.find("Td") != -1 or line.find("TD") != -1:
                 tokens = line.split()
@@ -280,25 +284,187 @@ def text_blocks_from_raw_blocks(raw_blocks : list[list[str]]) -> list[TextElemen
                 if td_index == -1 :
                     td_index = tokens.index("TD")
 
-                current_coords.x += round(float(tokens[td_index - 2]), 4)
-                current_coords.y += round(float(tokens[td_index - 1]), 4)
+                current_coords.x += float(tokens[td_index - 2])
+                current_coords.y += float(tokens[td_index - 1])
+
+                # Td/TD mean a new line, with an updated transformation matrix, so we can bump the element if any
+                if new_element :
+                    out.append(new_element)
+                    new_element = None
+
+        # Consume new element at the end of the parsing if needed
+        if new_element :
+            out.append(new_element)
+            new_element = None
 
     return out
 
 
-def cache_custom_blocks(filepath : Path, text_blocks : list[TextElement]) :
+def cache_contents(filepath : Path, page : PageBlocks) :
     if not filepath.parent.exists() :
         filepath.parent.mkdir(parents=True)
 
     with open(filepath, "w") as file :
-        data = []
-        for block in text_blocks :
-            data.append(block.to_json())
+        data = page.to_json()
         json.dump(data, file, indent=4)
 
+def find_closest_x_element(elements : list[TextElement], reference : TextElement) -> TextElement :
+    min_distance = 1000
+    closest : TextElement = elements[0]
+    for element in elements :
+        distance = abs(reference.x - element.x)
+        if distance < min_distance :
+            closest = element
+            min_distance = distance
 
-def main() :
+    return closest
+
+def find_closest_y_element(elements : list[TextElement], reference : TextElement) -> TextElement :
+    min_distance = 1000
+    closest : TextElement = elements[0]
+    for element in elements :
+        distance = abs(reference.y - element.y)
+        if distance < min_distance :
+            closest = element
+            min_distance = distance
+
+    return closest
+
+def find_closest_element(elements : list[TextElement], reference : TextElement) -> TextElement :
+    min_distance = 1000
+    closest : TextElement = elements[0]
+    for element in elements :
+        distance = math.sqrt(math.pow(reference.x - element.x, 2) + math.pow(reference.y - element.y, 2))
+        if distance < min_distance :
+            closest = element
+            min_distance = distance
+
+    return closest
+
+def extract_header(elements : list[TextElement], recipe : recipe.Recipe) -> recipe.Recipe :
+    # Sort list based on y indices, top to bottom
+    consumed_elements : list[TextElement] = []
+    elements.sort(key=lambda x : x.y, reverse=True )
+
+    recipe.number = int(elements[0].text.lstrip("#")) if elements[0].text.startswith("#") else 0
+    name_elem = find_closest_element(elements[1:], elements[0])
+    recipe.name = name_elem.text
+
+    consumed_elements.append(elements[0])
+    consumed_elements.append(name_elem)
+
+    abv_elem : Optional[TextElement] = None
+    ibu_elem : Optional[TextElement] = None
+    og_elem :  Optional[TextElement] = None
+
+    # Extracting first brew date, ABV, IBU and OG elements
+    for element in elements :
+        if element.text.find("FIRST BREWED") != -1 :
+            recipe.first_brewed = element.text[len("FIRST BREWED "):]
+            consumed_elements.append(element)
+            continue
+
+        if element.text == "ABV":
+            abv_elem = element
+            consumed_elements.append(element)
+            continue
+
+        if element.text == "IBU" :
+            ibu_elem = element
+            consumed_elements.append(element)
+            continue
+
+        if element.text == "OG" :
+            og_elem = element
+            consumed_elements.append(element)
+            continue
+
+    below_abv_elems : list[TextElement] = []
+    for element in elements :
+        if element.y < abv_elem.y :
+            below_abv_elems.append(element)
+
+    # Extract abv, ibu and og which are closest to column
+    abv_data_elem = find_closest_x_element(below_abv_elems, abv_elem)
+
+    # Sometimes, IBU does not exist for some beers (such as the beer #33 Tactical Nuclear Penguin)
+    if ibu_elem :
+        ibu_data_elem = find_closest_x_element(below_abv_elems, ibu_elem)
+        consumed_elements.append(ibu_data_elem)
+
+    # Same remark, sometimes OG is not there neither
+    if og_elem :
+        og_data_elem = find_closest_x_element(below_abv_elems, og_elem)
+        consumed_elements.append(og_data_elem)
+
+    consumed_elements.append(abv_data_elem)
+
+
+    # Fill in the recipe with the header's content
+    float_parsing_pattern = re.compile(r"([0-9]*\.?[0-9])")
+    recipe.basics.abv = float(re.match(float_parsing_pattern, abv_data_elem.text).groups()[0])
+
+    # Same, skip if nothing was parsed
+    if ibu_elem :
+        recipe.basics.ibu = float(re.match(float_parsing_pattern, ibu_data_elem.text).groups()[0])
+
+    # Same, skip if nothing was parsed
+    if og_elem :
+        recipe.basics.target_og = float(og_data_elem.text)
+
+    remaining_elements : list[TextElement] = []
+    for element in elements :
+        if not element in consumed_elements :
+            remaining_elements.append(element)
+
+    # Extract all tags from remaining elements
+    for element in remaining_elements :
+        splitted = element.text.split(".")
+        for part in splitted :
+            if part != "" :
+                recipe.tags.append(part.strip())
+
+
+    return recipe
+
+def extract_footer(elements : list[TextElement], recipe : recipe.Recipe) -> recipe.Recipe :
+    # Only extract page number
+    for element in elements :
+        if element.text.isnumeric() :
+            recipe.page_number = int(element.text)
+    return recipe
+
+def extract_body(elements : list[TextElement], recipe : recipe.Recipe) -> recipe.Recipe :
+    return recipe
+
+def extract_recipe(page : PageBlocks) -> recipe.Recipe :
+    header_y_limit = 660
+    footer_y_limit = 50
+
+    header_elements : list[TextElement] = []
+    footer_elements : list[TextElement] = []
+    body_elements : list[TextElement] = []
+
+    for block in page.blocks :
+        if block.y >= header_y_limit :
+            header_elements.append(block)
+        elif block.y <= footer_y_limit :
+            footer_elements.append(block)
+        else :
+            body_elements.append(block)
+
+    out = recipe.Recipe()
+    out = extract_header(header_elements, out)
+    out = extract_footer(footer_elements, out)
+    out = extract_body(body_elements, out)
+    return recipe.Recipe()
+
+
+def main(args) :
     force_caching = False
+    if len(args) >= 1 :
+        print("Force caching mode activated")
+        force_caching = args[0] == "true"
 
     this_dir = Path(__file__).parent
     cache_directory = this_dir.joinpath(".cache")
@@ -341,7 +507,7 @@ def main() :
                 cache_images(page_images_dir, page)
                 # contents_filepath = cached_content_dir.joinpath(encoded_name + ".txt")
                 # cache_pdf_contents(contents_filepath, page)
-                custom_blocks_filepath = cached_content_dir.joinpath(encoded_name + ".json")
+                content_filepath = cached_content_dir.joinpath(encoded_name + ".json")
 
 
                 # Fetch raw contents and manually parse it (works better than brute text extraction from pypdf2)
@@ -349,7 +515,16 @@ def main() :
                 str_contents = bytes(page.get_contents().get_data()).decode("utf-8")
                 raw_blocks = extract_raw_text_blocks_from_content(str_contents)
                 text_blocks = text_blocks_from_raw_blocks(raw_blocks)
-                cache_custom_blocks(custom_blocks_filepath, text_blocks)
+
+                # Post processing of text blocks :
+                temp_blocks = []
+                for block in text_blocks :
+                    # Strip whitespaces and removes empty items
+                    block.text = block.text.strip()
+                    if block.text != "" :
+                        temp_blocks.append(block)
+
+                text_blocks = temp_blocks
 
                 # Adding page blocks now, so that we
                 # don't have to parse them again
@@ -357,6 +532,7 @@ def main() :
                 page_blocks.blocks = text_blocks
                 page_blocks.index = beer_index
                 pages_content.append(page_blocks)
+                cache_contents(content_filepath, page_blocks)
 
 
 
@@ -385,13 +561,19 @@ def main() :
             page_blocks.from_json(data)
         pages_content.append(page_blocks)
 
+    print("Parsing actual recipe content from extracted text blocks")
+    recipes_list : list[recipe.Recipe] = []
+    for page in pages_content :
+        print("Parsing recipe from page {}".format(page.index))
+        new_recipe = extract_recipe(page)
+        recipes_list.append(new_recipe)
 
 
     print("Done !")
 
 if __name__ == "__main__" :
     try :
-        main()
+        main(sys.argv[1:])
     except Exception as e :
         print("-> ERROR : Caught exception while running script, error was  : {}".format(e))
         raise e
