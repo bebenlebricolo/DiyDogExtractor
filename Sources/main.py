@@ -473,6 +473,73 @@ def parse_basics_category(elements : list[TextElement], recipe : rcp.Recipe) -> 
 def parse_method_timings_category(elements : list[TextElement], recipe : rcp.Recipe) -> rcp.Recipe :
     return recipe
 
+
+def pre_process_malts(elements : list[TextElement]) -> list[TextElement] :
+    # Sometimes, malts names are longer than one line and span on multiple lines.
+    # A strategy to reduce this is to calculate the average distance between each contiguous text
+    # elements on the y axis. When a step becomes bigger, it means we are jumping from one malt to the following one
+    # Example :
+    #   malt 1 name -               5kg        11lb
+    #   with a trailing part
+    #   --------------------------------------------- -> this line does not exist in the listed TextElement, we cannot rely on it !
+    #   malt 2 name -
+    #   with another trailing part  1kg        some lb
+    #
+    # Usually components are listed like so :
+    #   malt 1 name -                 -
+    #   5kg                            |
+    #   11lb                           |
+    #   with a trailing part          -
+    #   malt 2 name -                 -
+    #   1kg                            |
+    #   some lb                        |
+    #   with another trailing part    -
+
+    blocks : list[list[TextElement]] = []
+    current_block : list[TextElement] = []
+    avg_distance = 0
+    # Current block will always start with the first element
+    current_block.append(elements[0])
+    for i in range(1, len(elements)) :
+        distance = abs(elements[i - 1].y - elements[i].y)
+
+        # Maybe we've reached a new data block ?
+        if distance > (avg_distance * 1.2) :
+            blocks.append(current_block)
+            current_block = [elements[i]]
+            avg_distance = 0
+            continue
+
+        current_block.append(elements[i])
+        avg_distance = ((avg_distance * (i - 1)) + distance) / (i)
+
+    # Pop the last element as well
+    if len(current_block) != 0 :
+        blocks.append(current_block)
+
+    out : list[TextElement] = []
+    # Sort the lists the that text elements are contiguous and ordered by y
+    for block in blocks :
+        weight_data_list : list[TextElement] = []
+        temp_list :list[TextElement] = []
+        for elem in block :
+            if elem.text.find("kg") != -1 or elem.text.find("lb") != -1 :
+                weight_data_list.append(elem)
+            else :
+                temp_list.append(elem)
+
+        # Aggregate data into a single text element
+        aggregated_text_elem = copy(temp_list[0])
+        for elem in temp_list[1:] :
+            aggregated_text_elem.text += " " + elem.text
+        out.append(aggregated_text_elem)
+
+        # Move weight data elements as well
+        for elem in weight_data_list :
+            out.append(elem)
+
+    return out
+
 def parse_ingredients_category(elements : list[TextElement], recipe : rcp.Recipe) -> rcp.Recipe :
     malt_elem = find_element(elements, "MALT")
     hops_elem = find_element(elements, "HOPS")
@@ -506,6 +573,12 @@ def parse_ingredients_category(elements : list[TextElement], recipe : rcp.Recipe
     # Parse malts
     malt_data_per_row = 3
     recipe.ingredients.malts.clear()
+
+    # Pre-process malts
+    # Required because sometimes malts might have trailing parts
+    malt_data_list = pre_process_malts(malt_data_list)
+
+
     for i in range(0, int(len(malt_data_list) / malt_data_per_row)) :
         index = i * malt_data_per_row
         dataset = [malt_data_list[index], malt_data_list[index + 1], malt_data_list[index + 2]]
