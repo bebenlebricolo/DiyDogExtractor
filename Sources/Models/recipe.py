@@ -101,7 +101,12 @@ class Hop(Jsonable) :
     attribute : str = ""
 
     def to_json(self) -> dict:
-        return self.__dict__
+        return {
+            "name" : self.name,
+            "amount" : self.amount,
+            "when" : self.when,
+            "attribute" : self.attribute
+        }
 
     def from_json(self, content: dict) -> None:
         self.name = self._read_prop("name", content, "")
@@ -122,7 +127,7 @@ class Yeast(Jsonable) :
 @dataclass
 class Ingredients(Jsonable) :
     malts : list[Malt] = field(default_factory=list)
-    hops : list[Hop] = field(default_factory=Hop)
+    hops : list[Hop] = field(default_factory=list)
     yeast : Yeast = field(default_factory=Yeast)
     description : Optional[str] = None
 

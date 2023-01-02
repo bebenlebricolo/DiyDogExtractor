@@ -13,6 +13,7 @@ from dataclasses import dataclass, field
 from copy import copy
 import struct
 import pickle
+import traceback
 from typing import Optional
 
 
@@ -27,6 +28,12 @@ from .Models import recipe as rcp
 
 
 C_DIYDOG_URL = "https://brewdogmedia.s3.eu-west-2.amazonaws.com/docs/2019+DIY+DOG+-+V8.pdf"
+
+GRAMS_PATTERN = re.compile(r"([0-9]+\.?[0-9]*) *([k]?[g])")
+NUMERICS_PATTERN = re.compile(r"([0-9]+\.?[0-9]*)")
+
+# This one is simpler as sometimes lb data is missing
+LBS_PATTERN = re.compile(r"([0-9]+\.[0-9]+)")
 
 def download_pdf(url : str, output_file : Path) -> None:
     response = requests.get(url)
@@ -331,6 +338,11 @@ def find_closest_element(elements : list[TextElement], reference : TextElement) 
     closest : TextElement = elements[0]
     for element in elements :
         distance = math.sqrt(math.pow(reference.x - element.x, 2) + math.pow(reference.y - element.y, 2))
+
+        # Case where we stumble upon our reference, that's not the one we're aiming for !
+        if distance == 0 and element == reference:
+            continue
+
         if distance < min_distance :
             closest = element
             min_distance = distance
@@ -342,11 +354,18 @@ def extract_header(elements : list[TextElement], recipe : rcp.Recipe) -> rcp.Rec
     consumed_elements : list[TextElement] = []
     elements.sort(key=lambda x : x.y, reverse=True )
 
-    recipe.number = int(elements[0].text.lstrip("#")) if elements[0].text.startswith("#") else 0
-    name_elem = find_closest_element(elements[1:], elements[0])
+    number_element =  elements[0]
+
+    # Sometimes the beer number element is not the first one (for some reason...)
+    for elem in elements :
+        if elem.text.startswith("#") and elem.text.lstrip("#").isnumeric() :
+            recipe.number = int(elem.text.lstrip("#"))
+            number_element = elem
+
+    name_elem = find_closest_element(elements, number_element)
     recipe.name = name_elem.text
 
-    consumed_elements.append(elements[0])
+    consumed_elements.append(number_element)
     consumed_elements.append(name_elem)
 
     abv_elem : Optional[TextElement] = None
@@ -397,12 +416,11 @@ def extract_header(elements : list[TextElement], recipe : rcp.Recipe) -> rcp.Rec
 
 
     # Fill in the recipe with the header's content
-    float_parsing_pattern = re.compile(r"([0-9]*\.?[0-9])")
-    recipe.basics.abv = float(re.match(float_parsing_pattern, abv_data_elem.text).groups()[0])
+    recipe.basics.abv = float(re.match(NUMERICS_PATTERN, abv_data_elem.text).groups()[0])
 
     # Same, skip if nothing was parsed
     if ibu_elem :
-        recipe.basics.ibu = float(re.match(float_parsing_pattern, ibu_data_elem.text).groups()[0])
+        recipe.basics.ibu = float(re.match(NUMERICS_PATTERN, ibu_data_elem.text).groups()[0])
 
     # Same, skip if nothing was parsed
     if og_elem :
@@ -474,6 +492,28 @@ def parse_method_timings_category(elements : list[TextElement], recipe : rcp.Rec
     return recipe
 
 
+def group_in_distinct_columns(elements : list[TextElement]) -> list[tuple[float,list[TextElement]]] :
+    known_x_columns : list[tuple[float, list[TextElement]]] = []
+
+    # Placement tolerance of about 1%
+    tolerance = 0.01
+
+    # Discover potential columns first based on x value extracted from transformation matrix
+    for elem in elements :
+        found_column = False
+        for column_x in known_x_columns :
+            # Match if value is within the interval, with some placement tolerance
+            distance = abs(elem.x - column_x[0])
+            if  distance <= (column_x[0] * tolerance):
+                column_x[1].append(elem)
+                found_column = True
+
+        # Append new data if we haven't found any previous datasets
+        if not found_column :
+            known_x_columns.append((elem.x, [elem]))
+
+    return known_x_columns
+
 def pre_process_malts(elements : list[TextElement]) -> list[TextElement] :
     # Sometimes, malts names are longer than one line and span on multiple lines.
     # A strategy to reduce this is to calculate the average distance between each contiguous text
@@ -497,46 +537,45 @@ def pre_process_malts(elements : list[TextElement]) -> list[TextElement] :
 
     blocks : list[list[TextElement]] = []
     current_block : list[TextElement] = []
-    avg_distance = 0
     # Current block will always start with the first element
     current_block.append(elements[0])
     for i in range(1, len(elements)) :
         distance = abs(elements[i - 1].y - elements[i].y)
 
         # Maybe we've reached a new data block ?
-        if distance > (avg_distance * 1.2) :
+        if distance >= 1.5 :
             blocks.append(current_block)
             current_block = [elements[i]]
-            avg_distance = 0
             continue
 
         current_block.append(elements[i])
-        avg_distance = ((avg_distance * (i - 1)) + distance) / (i)
 
     # Pop the last element as well
     if len(current_block) != 0 :
         blocks.append(current_block)
 
     out : list[TextElement] = []
-    # Sort the lists the that text elements are contiguous and ordered by y
+
+    # Now we need to order blocks with malt name, weight (grams or kg), weight (lb)
     for block in blocks :
-        weight_data_list : list[TextElement] = []
-        temp_list :list[TextElement] = []
-        for elem in block :
-            if elem.text.find("kg") != -1 or elem.text.find("lb") != -1 :
-                weight_data_list.append(elem)
-            else :
-                temp_list.append(elem)
+        # We need to sort out data based on x placement now so that we can isolate kgs and lbs data
+        x_sorted = copy(block)
+        x_sorted.sort(key=lambda x : x.x)
+        x_groups = group_in_distinct_columns(x_sorted)
 
-        # Aggregate data into a single text element
-        aggregated_text_elem = copy(temp_list[0])
-        for elem in temp_list[1:] :
-            aggregated_text_elem.text += " " + elem.text
-        out.append(aggregated_text_elem)
+        kg_data = x_groups[len(x_groups) - 2][1][0] # Taking the first element, should be the only one
+        lb_data = x_groups[len(x_groups) - 1][1][0] # Taking the first element, should be the only one
+        malt_text_list : list[TextElement] = x_groups[0][1]
+        malt_text_list.sort(key=lambda x : x.y, reverse=True)
 
-        # Move weight data elements as well
-        for elem in weight_data_list :
-            out.append(elem)
+        # Aggregate data if need be
+        new_elem = copy(malt_text_list[0])
+        for elem in malt_text_list[1:] :
+            new_elem.text += " " + elem.text.strip()
+        new_elem.text.strip()
+        out.append(new_elem)
+        out.append(kg_data)
+        out.append(lb_data)
 
     return out
 
@@ -547,7 +586,10 @@ def parse_ingredients_category(elements : list[TextElement], recipe : rcp.Recipe
 
     # Beer without ingredients, the beer #89 is one of them
     if not malt_elem and not hops_elem and not yeast_elem :
+        recipe.ingredients.description = ""
         for elem in elements :
+            if elem.text == "INGREDIENTS" :
+                continue
             recipe.ingredients.description += elem.text + " "
         recipe.ingredients.description = recipe.ingredients.description.strip()
         return recipe
@@ -576,18 +618,26 @@ def parse_ingredients_category(elements : list[TextElement], recipe : rcp.Recipe
 
     # Pre-process malts
     # Required because sometimes malts might have trailing parts
-    malt_data_list = pre_process_malts(malt_data_list)
+    preprocessed_malts = pre_process_malts(malt_data_list)
 
 
-    for i in range(0, int(len(malt_data_list) / malt_data_per_row)) :
+    for i in range(0, int(len(preprocessed_malts) / malt_data_per_row)) :
         index = i * malt_data_per_row
-        dataset = [malt_data_list[index], malt_data_list[index + 1], malt_data_list[index + 2]]
-        # Sort items using the x component, left to right
-        dataset.sort(key=lambda x : x.x)
+        dataset = [
+            preprocessed_malts[index],      # Aggregated malt text (name)
+            preprocessed_malts[index + 1],  # Kg data
+            preprocessed_malts[index + 2]   # Lb data
+        ]
+
         new_malt = rcp.Malt()
         new_malt.name = dataset[0].text
-        new_malt.kgs = float(dataset[1].text.replace("kg", ""))
-        new_malt.lbs = float(dataset[2].text.replace("lb", ""))
+
+        # Assuming malt is always provided either as "kg" or "lb" (it happens that on some recipes, data is misformatted)
+        # Sometimes, unit is missing (such as in the beer #185, missing "lb", sometimes it is misspelled (6.6gal1lb -> Typo))
+        # And sometimes the "k" of "kg" disappeared, giving incorrect malt amounts such as
+        # in the beer #4 whose Carafa special says "0.18 grams". Who will ever put 0.18 grams of malt in a recipe ??
+        new_malt.kgs = float(NUMERICS_PATTERN.match(dataset[1].text).groups()[0])
+        new_malt.lbs = float(NUMERICS_PATTERN.match(dataset[2].text).groups()[0])
         recipe.ingredients.malts.append(new_malt)
 
 
@@ -716,18 +766,20 @@ def extract_recipe(page : PageBlocks) -> rcp.Recipe :
     body_elements : list[TextElement] = []
 
     for block in page.blocks :
+        # Convert that to a TextElement to get rid of unnecessary data
+        element = TextElement(block.x, block.y, block.text)
         if block.y >= header_y_limit :
-            header_elements.append(block)
+            header_elements.append(element)
         elif block.y <= footer_y_limit :
-            footer_elements.append(block)
+            footer_elements.append(element)
         else :
-            body_elements.append(block)
+            body_elements.append(element)
 
     out = rcp.Recipe()
     out = extract_header(header_elements, out)
     out = extract_footer(footer_elements, out)
     out = extract_body(body_elements, out)
-    return rcp.Recipe()
+    return out
 
 
 def main(args) :
@@ -742,6 +794,7 @@ def main(args) :
     cached_blocks_dir = cache_directory.joinpath("blocks")
     cached_pdf_raw_content = cache_directory.joinpath("pdf_raw_contents")
     cached_images_dir = cache_directory.joinpath("images")
+    cached_extracted_recipes = cache_directory.joinpath("extracted_recipes")
     # Pages decoded content with PyPDF2 library
     cached_content_dir = cache_directory.joinpath("contents")
     #cached_custom_blocks = cache_directory.joinpath("custom_blocks")
@@ -845,9 +898,25 @@ def main(args) :
     recipes_list : list[rcp.Recipe] = []
     for page in pages_content :
         print("Parsing recipe from page {}".format(page.index))
-        new_recipe = extract_recipe(page)
-        recipes_list.append(new_recipe)
+        try :
+            new_recipe = extract_recipe(page)
+            recipes_list.append(new_recipe)
+        except Exception as e :
+            print("Could not extract recipe from beer {}".format(page.index))
+            print("Error was : {}".format(e))
+            print(traceback.format_exc())
 
+    # Dump recipes on disk now !
+    if not cached_extracted_recipes.exists() :
+        cached_extracted_recipes.mkdir(parents=True)
+
+    print("Dumping extracted recipes on disk now !")
+    for recipe in recipes_list :
+        print("Dumping recipe {}, number {}".format(recipe.name, recipe.number))
+        filename = "recipe_{}.json".format(recipe.number)
+        filepath = cached_extracted_recipes.joinpath(filename)
+        with open(filepath, "w") as file :
+            json.dump(recipe.to_json(), file,indent=4)
 
     print("Done !")
 
