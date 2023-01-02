@@ -726,10 +726,25 @@ def extract_body(elements : list[TextElement], recipe : rcp.Recipe) -> rcp.Recip
             column_2_elements.append(element)
             continue
 
+    # Sometimes, the Method / timings element is not placed correctly (pdf placing artifacts...?)
+    # Custom code for beer # 307 ... such a shame to do that kind of stuff ...
+    if recipe.number == 307 :
+        found = find_element(column_1_elements, "METHOD / TIMINGS")
+        if found :
+            print("Found Method/Timings element in wrong column, moving it to column 0")
+            column_1_elements.remove(found)
+
+            # Duplicate parts of the previous element
+            mash_temp_elem = find_element(column_0_elements, "MASH TEMP")
+            found.x = mash_temp_elem.x - 10
+            found.y = mash_temp_elem.y + 10
+            column_0_elements.append(found)
+
     # Sort items by y position (Top to bottom)
     column_0_elements.sort(key=lambda x : x.y, reverse=True)
     column_1_elements.sort(key=lambda x : x.y, reverse=True)
     column_2_elements.sort(key=lambda x : x.y, reverse=True)
+
 
     # Extract categories and content for each column
     column_0_categories = filter_categories_and_content(references_list, column_0_elements)
