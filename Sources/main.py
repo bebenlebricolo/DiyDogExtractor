@@ -358,13 +358,16 @@ def extract_header(elements : list[TextElement], recipe : rcp.Recipe) -> rcp.Rec
 
     # Sometimes the beer number element is not the first one (for some reason...)
     for elem in elements :
+        # Some beers start with the infamous "#" and we just want to isolate the beer number (always formatted as "#123")
         if elem.text.startswith("#") and elem.text.lstrip("#").isnumeric() :
             recipe.number = int(elem.text.lstrip("#"))
             number_element = elem
 
+    # The beer's name is always the closest item to the beer's number, in the formatting
     name_elem = find_closest_element(elements, number_element)
     recipe.name = name_elem.text
 
+    # We need to keep track of the consumed element so that they don't fall into the tag lines
     consumed_elements.append(number_element)
     consumed_elements.append(name_elem)
 
@@ -432,11 +435,20 @@ def extract_header(elements : list[TextElement], recipe : rcp.Recipe) -> rcp.Rec
             remaining_elements.append(element)
 
     # Extract all tags from remaining elements
-    for element in remaining_elements :
-        splitted = element.text.split(".")
+    remaining_elements.sort(key=lambda x : x.x)
+    for i in range(0, len(remaining_elements)) :
+        element = remaining_elements[i]
+        splitted = remaining_elements[i].text.split(".")
         for part in splitted :
             if part != "" :
-                recipe.tags.append(part.strip())
+                # We have some tag lines that contain stuff like "12 th anniversary", but they are encoded by the PDF as two
+                # separate items for some reasons
+                if part == "TH" and i != 0 and remaining_elements[i - 1].text.isnumeric() :
+                    recipe.tags[len(recipe.tags) - 1] += "th"
+
+                else :
+                    recipe.tags.append(part.strip())
+
 
 
     return recipe
