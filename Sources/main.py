@@ -1,25 +1,25 @@
 #!/usr/bin/python
 
-import sys
+import io
 import os
-import math
 import re
-import requests
+import sys
+import math
 import json
+import requests
 from pathlib import Path
-import PyPDF2
-from PyPDF2 import PageObject, PdfFileWriter
+
 from dataclasses import dataclass, field
 from copy import copy
-import struct
-import pickle
 import traceback
 from typing import Optional
 
-import io
-from io import BufferedReader
+import PyPDF2
+from PyPDF2 import PageObject, PdfFileWriter
 
 from PIL import Image
+
+# Local imports
 
 from .Utils.parsing import parse_line
 from .Utils.logger import Logger
@@ -81,10 +81,6 @@ class TextBlock(Coordinates) :
     transformation_matrix = None
     current_matrix = None
 
-    def to_bytes(self) -> bytes :
-        struct.pack()
-        return pickle.dumps(self)
-
     def to_json(self) -> dict :
         parent_dict = super().to_json()
         parent_dict.update({
@@ -100,9 +96,6 @@ class TextBlock(Coordinates) :
         self.text = self._read_prop("text", content, "")
         self.transformation_matrix = self._read_prop("tm", content, [0,0,0,0,0,0])
         self.current_matrix = self._read_prop("cm", content, [0,0,0,0,0,0])
-
-    def from_buffer(self, buffer : BufferedReader) :
-        self = pickle.load(buffers=buffer)
 
 @dataclass
 class TextElement(Coordinates) :
@@ -121,35 +114,29 @@ class TextElement(Coordinates) :
 
 @dataclass
 class PageBlocks(Jsonable) :
-    blocks : list[TextElement] = field(default_factory=list)
+    elements : list[TextElement] = field(default_factory=list)
     index : int = 0
 
     def reset(self) :
         self.__init__()
 
     def to_json(self) -> dict:
-        blocks_list = []
-        for block  in self.blocks :
-            blocks_list.append(block.to_json())
+        elements_list = []
+        for block  in self.elements :
+            elements_list.append(block.to_json())
         return {
             "index" : self.index,
-            "blocks" : blocks_list
+            "elements" : elements_list
         }
 
     def from_json(self, content) -> None:
-        self.blocks.clear()
+        self.elements.clear()
         self.index = self._read_prop("index", content, 0)
-        if "blocks" in content :
-            for block in content["blocks"] :
-                new_block = TextBlock()
+        if "elements" in content :
+            for block in content["elements"] :
+                new_block = TextElement()
                 new_block.from_json(block)
-                self.blocks.append(new_block)
-
-
-    def get_last_block(self) -> Optional[TextBlock] :
-        if len(self.blocks) != 0 :
-            return self.blocks[len(self.blocks) - 1]
-        return None
+                self.elements.append(new_block)
 
 
 def cache_raw_blocks(filepath : Path, blocks : list[list[str]] ) :
@@ -177,10 +164,13 @@ def cache_pdf_contents(filepath : Path, page : PageObject) :
         filepath.parent.mkdir(parents=True)
 
     contents = page.get_contents()
-    raw_data : bytes = contents.get_data()
-    str_contents = raw_data.decode()
-    with open(filepath, "w") as file :
-        file.writelines(str_contents)
+    if contents :
+        raw_data : bytes = contents.get_data()
+        str_contents = raw_data.decode()
+        with open(filepath, "w") as file :
+            file.writelines(str_contents)
+    else :
+        raise Exception("Content is missing from page document")
 
 
 def cache_images(directory : Path, page : PageObject) :
@@ -197,22 +187,13 @@ def cache_images(directory : Path, page : PageObject) :
 
             except Exception as e :
                 logger.log("Caught error while caching images for page {}".format(directory.name))
-                logger.log(e)
+                logger.log(e.__repr__())
                 continue
 
     # Sometimes we can't even list the images because of some weird errors ealier in the pdf parsing methods
     except Exception as e :
         logger.log("Caught error while caching images for page {}".format(directory.name))
-        logger.log(e)
-
-def retrieve_single_page_from_cache(filepath : Path) -> list[TextBlock] :
-    blocks : list[TextBlock] = []
-    with open(filepath, "rb") as file :
-        length = file.read(sys.getsizeof(int))
-        for i in range(length) :
-            block = TextBlock()
-            block.from_buffer(buffer=file)
-            blocks.append(block)
+        logger.log(e.__repr__())
 
 def list_pages(directory : Path, radical : str, extension : str = ".pdf") -> list[tuple[int, Path]] :
     pages_list : list[tuple[int, Path]] = []
@@ -403,11 +384,19 @@ def extract_header(elements : list[TextElement], recipe : rcp.Recipe) -> rcp.Rec
 
     below_abv_elems : list[TextElement] = []
     for element in elements :
-        if element.y < abv_elem.y :
+        if abv_elem and element.y < abv_elem.y :
             below_abv_elems.append(element)
 
+
+    # Handle data elements one by one
+    abv_data_elem : Optional[TextElement] = None
+    ibu_data_elem : Optional[TextElement] = None
+    og_data_elem : Optional[TextElement] = None
+
     # Extract abv, ibu and og which are closest to column
-    abv_data_elem = find_closest_x_element(below_abv_elems, abv_elem)
+    if abv_elem :
+        abv_data_elem = find_closest_x_element(below_abv_elems, abv_elem)
+        consumed_elements.append(abv_data_elem)
 
     # Sometimes, IBU does not exist for some beers (such as the beer #33 Tactical Nuclear Penguin)
     if ibu_elem :
@@ -419,19 +408,25 @@ def extract_header(elements : list[TextElement], recipe : rcp.Recipe) -> rcp.Rec
         og_data_elem = find_closest_x_element(below_abv_elems, og_elem)
         consumed_elements.append(og_data_elem)
 
-    consumed_elements.append(abv_data_elem)
 
-
-    # Fill in the recipe with the header's content
-    recipe.basics.abv = float(re.match(NUMERICS_PATTERN, abv_data_elem.text).groups()[0])
-
-    # Same, skip if nothing was parsed
-    if ibu_elem :
-        recipe.basics.ibu = float(re.match(NUMERICS_PATTERN, ibu_data_elem.text).groups()[0])
+    # Then extract data from them adequately
+    if abv_data_elem :
+        # Fill in the recipe with the header's content
+        match = NUMERICS_PATTERN.match(abv_data_elem.text)
+        if match :
+            recipe.basics.abv = float(match.groups()[0])
 
     # Same, skip if nothing was parsed
-    if og_elem :
+    if ibu_data_elem :
+        match = NUMERICS_PATTERN.match(ibu_data_elem.text)
+        if match :
+            recipe.basics.ibu = float(match.groups()[0])
+
+    # Same, skip if nothing was parsed
+    if og_data_elem :
         recipe.basics.target_og = float(og_data_elem.text)
+
+
 
     remaining_elements : list[TextElement] = []
     for element in elements :
@@ -451,7 +446,8 @@ def extract_header(elements : list[TextElement], recipe : rcp.Recipe) -> rcp.Rec
                     recipe.tags[len(recipe.tags) - 1] += "th"
 
                 else :
-                    recipe.tags.append(part.strip())
+                    # Popping out all parasitic characters such as " (FANZINE) " -> "FANZINE"
+                    recipe.tags.append(part.strip().lstrip("(").rstrip(")").strip())
 
 
 
@@ -464,11 +460,19 @@ def extract_footer(elements : list[TextElement], recipe : rcp.Recipe) -> rcp.Rec
             recipe.page_number = int(element.text)
     return recipe
 
+
 def find_element(elements : list[TextElement], text : str) -> Optional[TextElement] :
     for element in elements :
         if element.text == text :
             return element
     return None
+
+# Variant of the above one, but we enforce the object state
+# used essentially to cover the use case where data *needs* to be there
+def find_element_strict(elements : list[TextElement], text : str) -> TextElement :
+    elem = find_element(elements, text)
+    assert(elem)
+    return elem
 
 def get_elem_index(elements : list[TextElement], text : str) -> int :
     for i in range(0, len(elements)) :
@@ -666,8 +670,12 @@ def parse_ingredients_category(elements : list[TextElement], recipe : rcp.Recipe
         # Sometimes, unit is missing (such as in the beer #185, missing "lb", sometimes it is misspelled (6.6gal1lb -> Typo))
         # And sometimes the "k" of "kg" disappeared, giving incorrect malt amounts such as
         # in the beer #4 whose Carafa special says "0.18 grams". Who will ever put 0.18 grams of malt in a recipe ??
-        new_malt.kgs = float(NUMERICS_PATTERN.match(dataset[1].text).groups()[0])
-        new_malt.lbs = float(NUMERICS_PATTERN.match(dataset[2].text).groups()[0])
+        match = NUMERICS_PATTERN.match(dataset[1].text)
+        if match :
+            new_malt.kgs = float(match.groups()[0])
+        match = NUMERICS_PATTERN.match(dataset[2].text)
+        if match :
+            new_malt.lbs = float(match.groups()[0])
         recipe.ingredients.malts.append(new_malt)
 
 
@@ -729,13 +737,17 @@ def parse_packaging_category(elements : list[TextElement], recipe : rcp.Recipe) 
     return recipe
 
 def extract_body(elements : list[TextElement], recipe : rcp.Recipe) -> rcp.Recipe :
-    this_beer_is_elem   : TextElement = find_element(elements, "THIS BEER IS")
-    basics_elem         : TextElement = find_element(elements, "BASICS")
-    ingredients_elem    : TextElement = find_element(elements, "INGREDIENTS")
-    food_pairing_elem   : TextElement = find_element(elements, "FOOD PAIRING")
-    method_timings_elem : TextElement = find_element(elements, "METHOD / TIMINGS")
-    brewers_tip_elem    : TextElement = find_element(elements, "BREWER\x92S TIP")
-    packaging_elem      : TextElement = find_element(elements, "PACKAGING")
+
+    this_beer_is_elem   : TextElement = find_element_strict(elements, "THIS BEER IS")
+    basics_elem         : TextElement = find_element_strict(elements, "BASICS")
+    ingredients_elem    : TextElement = find_element_strict(elements, "INGREDIENTS")
+    method_timings_elem : TextElement = find_element_strict(elements, "METHOD / TIMINGS")
+    brewers_tip_elem    : TextElement = find_element_strict(elements, "BREWER\x92S TIP")
+    packaging_elem      : TextElement = find_element_strict(elements, "PACKAGING")
+
+    # Food pairing is not always there for all recipes
+    food_pairing_elem   : Optional[TextElement] = find_element(elements, "FOOD PAIRING")
+
 
     # List of known good references/categories
     # This will be used in order to filter embedded data
@@ -792,9 +804,12 @@ def extract_body(elements : list[TextElement], recipe : rcp.Recipe) -> rcp.Recip
 
             # Duplicate parts of the previous element
             mash_temp_elem = find_element(column_0_elements, "MASH TEMP")
-            found.x = mash_temp_elem.x - 10
-            found.y = mash_temp_elem.y + 10
-            column_0_elements.append(found)
+            if mash_temp_elem :
+                found.x = mash_temp_elem.x - 10
+                found.y = mash_temp_elem.y + 10
+                column_0_elements.append(found)
+            else :
+                raise Exception("Could not find Mashing temperature data in current page ; beer number is {}".format(recipe.number))
 
     # Sort items by y position (Top to bottom)
     column_0_elements.sort(key=lambda x : x.y, reverse=True)
@@ -848,12 +863,11 @@ def extract_recipe(page : PageBlocks) -> rcp.Recipe :
     footer_elements : list[TextElement] = []
     body_elements : list[TextElement] = []
 
-    for block in page.blocks :
+    for element in page.elements :
         # Convert that to a TextElement to get rid of unnecessary data
-        element = TextElement(block.x, block.y, block.text)
-        if block.y >= header_y_limit :
+        if element.y >= header_y_limit :
             header_elements.append(element)
-        elif block.y <= footer_y_limit :
+        elif element.y <= footer_y_limit :
             footer_elements.append(element)
         else :
             body_elements.append(element)
@@ -918,7 +932,10 @@ def main(args) :
 
                 # Fetch raw contents and manually parse it (works better than brute text extraction from pypdf2)
                 logger.log("Extracting textual content of page ...")
-                str_contents = bytes(page.get_contents().get_data()).decode("utf-8")
+                raw_contents = page.get_contents()
+                if not raw_contents :
+                    raise Exception("Cannot read page !")
+                str_contents = bytes(raw_contents.get_data()).decode("utf-8")
                 cache_pdf_raw_contents(cached_pdf_raw_content.joinpath(encoded_name + ".txt"), str_contents )
 
                 raw_blocks = extract_raw_text_blocks_from_content(str_contents)
@@ -943,7 +960,7 @@ def main(args) :
                 # Adding page blocks now, so that we
                 # don't have to parse them again
                 page_blocks = PageBlocks()
-                page_blocks.blocks = text_blocks
+                page_blocks.elements = text_blocks
                 page_blocks.index = beer_index
                 pages_content.append(page_blocks)
                 cache_contents(content_filepath, page_blocks)

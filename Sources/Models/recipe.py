@@ -75,9 +75,10 @@ class FoodPairing(Jsonable):
         return self.__dict__
 
     def from_json(self, content: dict) -> None:
-        self.pairings.clear()
-        for item in content :
-            self.pairings.append(item)
+        if "pairings" in content :
+            self.pairings = []
+            for item in content["pairings"] :
+                self.pairings.append(item)
 
 @dataclass
 class Malt(Jsonable) :
@@ -126,42 +127,52 @@ class Yeast(Jsonable) :
 
 @dataclass
 class Ingredients(Jsonable) :
+    MALTS_KEY = "malts"
+    HOPS_KEY = "hops"
+    YEASTS_KEY = "yeasts"
+    DESCRIPTION_KEY = "description"
+
     malts : list[Malt] = field(default_factory=list)
     hops : list[Hop] = field(default_factory=list)
-    yeast : Yeast = field(default_factory=Yeast)
+    yeasts : list[Yeast] = field(default_factory=list)
     description : Optional[str] = None
 
     def to_json(self) -> dict:
         malts_list = [x.to_json() for x in self.malts]
         hops_list = [x.to_json() for x in self.hops]
+        yeast_list = [x.to_json() for x in self.yeasts]
 
         return {
-            "malts" : malts_list,
-            "hops" : hops_list,
-            "yeast" : self.yeast.to_json(),
-            "description" : self.description
+            self.MALTS_KEY : malts_list,
+            self.HOPS_KEY : hops_list,
+            self.YEASTS_KEY : yeast_list,
+            self.DESCRIPTION_KEY : self.description
         }
 
     def from_json(self, content: dict) -> None:
-        if "malts" in content :
+        if self.MALTS_KEY in content :
             self.malts = []
-            for malt in content["malts"] :
+            for malt in content[self.MALTS_KEY] :
                 new_malt = Malt()
                 new_malt.from_json(malt)
                 self.malts.append(new_malt)
 
-        if "hops" in content :
+        if self.HOPS_KEY in content :
             self.hops = []
-            for hop in content["hops"] :
+            for hop in content[self.HOPS_KEY] :
                 new_hop = Hop()
                 new_hop.from_json(hop)
                 self.hops.append(new_hop)
 
-        if "yeast" in content :
-            self.yeast.from_json(content["yeast"])
+        if self.YEASTS_KEY in content :
+            self.yeasts = []
+            for yeast in content[self.YEASTS_KEY] :
+                new_yeast = Yeast()
+                new_yeast.from_json(yeast)
+                self.yeasts.append(new_yeast)
 
-        if "description" in content :
-            self.description = content["description"]
+        if self.DESCRIPTION_KEY in content :
+            self.description = content[self.DESCRIPTION_KEY]
 
 
 @dataclass
@@ -176,12 +187,12 @@ class BrewersTip(Jsonable) :
 
 @dataclass
 class Temperature(Jsonable) :
-    celcius : float = 0.0       # celsius degrees
-    farenheit : float = 0.0     # farenheit degrees
+    celsius : float = 0.0       # celsius degrees
+    fahrenheit : float = 0.0     # fahrenheit degrees
 
     def from_json(self, content: dict) -> None:
-        self.celcius = self._read_prop("celsius", content, 0.0)
-        self.farenheit = self._read_prop("farenheit", content, 0.0)
+        self.celsius = self._read_prop("celsius", content, 0.0)
+        self.fahrenheit = self._read_prop("fahrenheit", content, 0.0)
 
     def to_json(self) -> dict:
         return self.__dict__
@@ -211,33 +222,50 @@ class Twist(Jsonable) :
     amount : Optional[float] = None # This is optional as some twists are simply text hints/techniques
                                     # If set, this field stands for an amount in grams
 
+    def to_json(self) -> dict:
+        return self.__dict__
+
+    def from_json(self, content: dict) -> None:
+        # Reset class
+        self.__init__()
+        self.name = self._read_prop("name", content, "")
+        if "amount" in content and content["amount"]:
+            self.amount = content["amount"]
+
+
 @dataclass
 class MethodTimings(Jsonable) :
-    mash_temp : MashTemp = field(default_factory=MashTemp)
+    mash_temps : list[MashTemp] = field(default_factory=list)
     fermentation : Fermentation = field(default_factory=Fermentation)
     twists : Optional[list[Twist]] = None
 
     def to_json(self) -> dict:
+        mash_temp_list = [x.to_json() for x in self.mash_temps]
         out = {
-            "mashTemp" : self.mash_temp.to_json(),
+            "mashTemps" : mash_temp_list,
             "fermentation" : self.fermentation.to_json(),
             "twists" : None
         }
         if self.twists :
-            twists_dict = []
-            for twist in self.twists :
-                twists_dict.append(twist.to_json())
-            out["twists"] = twists_dict
+            twists = [x.to_json() for x in self.twists]
+            out["twists"] = twists
         return out
 
     def from_json(self, content: dict) -> None:
-        if "mashTemp" in content :
-            self.mash_temp.from_json(content["mashTemp"])
+        if "mashTemps" in content :
+            self.mash_temps = []
+            for temp in content["mashTemps"] :
+                new_temp = MashTemp()
+                new_temp.from_json(temp)
+                self.mash_temps.append(new_temp)
+
         if "fermentation" in content :
             self.fermentation.from_json(content["fermentation"])
+
         if "twists" in content :
-            self.twists = []
+            self.twists = None
             if content["twists"] :
+                self.twists = []
                 for twist in content["twists"] :
                     new_twist = Twist()
                     new_twist.from_json(twist)
@@ -265,11 +293,13 @@ class Recipe(Jsonable) :
     original_pdf_page : str = "" # Ref to original pdf page extracted from DiyDog book
     description : Description = field(default_factory=Description)
     basics : Basics = field(default_factory=Basics)
-    food_pairing : FoodPairing = field(default_factory=FoodPairing)
     ingredients : Ingredients = field(default_factory=Ingredients)
     brewers_tip : BrewersTip = field(default_factory=BrewersTip)
     method_timings : MethodTimings = field(default_factory=MethodTimings)
     packaging : Packaging = field(default_factory=Packaging)
+
+    # Some beers don't have food pairing associated (happens for beer #79 and #156)
+    food_pairing : Optional[FoodPairing] = None
 
     def to_json(self) -> dict:
         return {
@@ -282,7 +312,7 @@ class Recipe(Jsonable) :
             "originalPdfPage" : self.original_pdf_page,
             "description" : self.description.to_json(),
             "basics" : self.basics.to_json(),
-            "foodPairing" : self.food_pairing.to_json(),
+            "foodPairing" : self.food_pairing.to_json() if self.food_pairing else None,
             "ingredients" : self.ingredients.to_json(),
             "brewersTip" : self.brewers_tip.to_json(),
             "methodTimings" : self.method_timings.to_json(),
@@ -300,10 +330,13 @@ class Recipe(Jsonable) :
         self.first_brewed = self._read_prop("firstBrewed", content, "")
         self.image = self._read_prop("image", content, "")
         self.original_pdf_page = self._read_prop("originalPdfPage", content, "")
-        self.description = self._read_prop("description", content, "")
+
+        if "description" in content :
+            self.description.from_json(content["description"])
         if "basics" in content :
             self.basics.from_json(content["basics"])
-        if "foodPairing" in content :
+        if "foodPairing" in content and content["foodPairing"] :
+            self.food_pairing = FoodPairing()
             self.food_pairing.from_json(content["foodPairing"])
         if "ingredients" in content :
             self.ingredients.from_json(content["ingredients"])
