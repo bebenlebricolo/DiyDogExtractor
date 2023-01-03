@@ -497,21 +497,6 @@ def filter_categories_and_content(reference_list : list[TextElement], elements :
         categorized_lists.append(current_category)
     return categorized_lists
 
-def parse_this_beer_is_category(elements : list[TextElement], recipe : rcp.Recipe) -> rcp.Recipe :
-    description = ""
-    # Pop the first element "THIS BEER IS", we don't want that in the description
-    for elem in elements[1:] :
-        description += elem.text + " "
-    recipe.description.text = description.strip()
-    return recipe
-
-def parse_basics_category(elements : list[TextElement], recipe : rcp.Recipe) -> rcp.Recipe :
-    return recipe
-
-def parse_method_timings_category(elements : list[TextElement], recipe : rcp.Recipe) -> rcp.Recipe :
-    return recipe
-
-
 def concatenate_columns(columns : list[tuple[float,list[TextElement]]]) -> list[TextElement]:
     out : list[TextElement] = []
     for column in columns :
@@ -565,6 +550,136 @@ def split_blocks_based_on_y_distance(elements:  list[TextElement], threshold : f
         blocks.append(current_block)
 
     return blocks
+
+def remove_exact_doubles(elements: list[TextElement]) -> list[TextElement] :
+    unique : list[TextElement] = []
+    for elem in elements :
+        # If the element exactly match the one we're targetting, we remove this from the original list
+        if find_element(unique, elem.text) == elem :
+            continue
+        unique.append(elem)
+
+    return unique
+
+def parse_this_beer_is_category(elements : list[TextElement], recipe : rcp.Recipe) -> rcp.Recipe :
+    description = ""
+    # Pop the first element "THIS BEER IS", we don't want that in the description
+    for elem in elements[1:] :
+        description += elem.text + " "
+    recipe.description.text = description.strip()
+    return recipe
+
+def parse_basics_category(elements : list[TextElement], recipe : rcp.Recipe) -> rcp.Recipe :
+    elements.sort(key=lambda x : x.y, reverse=True)
+    rows = split_blocks_based_on_y_distance(elements)
+    for row in rows :
+        # Skipping this element, we don't need it now
+        if find_element(row, "BASICS") :
+            continue
+
+        raw_columns = group_in_distinct_columns(row)
+
+        # Remove doubles !!!
+        # Some beers; such as #290 have doubles (why ...???) so we need to get rid of them firstr
+        filtered_raw : list[tuple[float, list[TextElement]]] = []
+        for raw_column in raw_columns :
+            filtered_raw.append((raw_column[0], remove_exact_doubles(raw_column[1])))
+
+        if recipe.number == 290 :
+            pass
+        flattened_columns = concatenate_columns(filtered_raw)
+        flattened_columns.sort(key=lambda x : x.x)
+
+        match flattened_columns[0].text :
+            case "VOLUME" | "BOIL VOLUME" :
+                volume = rcp.Volume()
+
+                # Extract litres
+                match = NUMERICS_PATTERN.match(flattened_columns[1].text)
+                if match :
+                    volume.litres = float(match.groups()[0])
+
+                # Extract galons
+                match = NUMERICS_PATTERN.match(flattened_columns[2].text)
+                if match :
+                    volume.galons = float(match.groups()[0])
+
+                # Dispatch the volume accordingly
+                if flattened_columns[0].text == "VOLUME" :
+                    recipe.basics.volume = volume
+                else :
+                    recipe.basics.boil_volume = volume
+
+            case "ABV" :
+                if recipe.basics.abv != 0.0 :
+                    continue
+                # Parsing ABV in case it was not extracted from header yet ; There should only be 2 columns here
+                match = NUMERICS_PATTERN.match(flattened_columns[1].text)
+                if match :
+                    recipe.basics.abv = float(match.groups()[0])
+
+            case "TARGET OG" :
+                if recipe.basics.target_og != 0.0 :
+                    continue
+                value = flattened_columns[1].text
+                recipe.basics.target_og = float(value)
+
+                # Again, ugly stuff ... gravities were swapped, and OG in "Basics" section
+                # was replaced with ABV !
+                if recipe.number == 413 :
+                        recipe.basics.target_fg = recipe.basics.target_og
+
+            case "TARGET FG" :
+                try :
+                    matches = NUMERICS_PATTERN.findall(flattened_columns[1].text)
+                    # We're only taking the first one, by convention
+                    # Some beers have a range (such as the beer #192) which we can't reproduce with a single
+                    # value without adding extra complexity to the data model, so taking the first value will do the job instead
+                    recipe.basics.target_fg = float(matches[0])
+                except Exception as e :
+                    logger.log("/!\\ Caught weird stuff in Target FG for beer {}. Text was : {}".format(recipe.number, flattened_columns[1]))
+
+
+            # Beers #207, #213; #214, #215 have a weird field named TARGET EBC WORT that needs to be handled as a regular ebc
+            case "EBC" | "SRM" | "TARGET EBC WORT" :
+                # Some beers (such as the #16th one) have N/A mention for EBC and SRM
+                value = flattened_columns[1].text
+                fval : float = 0.0
+                if value == "N/A" :
+                    fval = math.nan
+                else :
+                    try :
+                        fval = float(NUMERICS_PATTERN.findall(flattened_columns[1].text)[0])
+                    except Exception as e:
+                        logger.log("/!\\ Could not convert value for {} because {}.".format(flattened_columns[0].text, e))
+                        continue
+
+                # Same treatment for both categories
+                if "EBC" in flattened_columns[0].text :
+                    recipe.basics.ebc = fval
+                else :
+                    recipe.basics.srm = fval
+
+            case "PH" :
+                # Ph is missing on some recipes, so we can try to infer it
+                if len(flattened_columns) == 2 :
+                    recipe.basics.ph = float(flattened_columns[1].text)
+                else :
+                    # 4.4 seems a pretty common value in BrewDog's beers
+                    recipe.basics.ph = 4.4
+
+            case "ATTENUATION LEVEL" :
+                match = NUMERICS_PATTERN.match(flattened_columns[1].text)
+                if match :
+                    recipe.basics.attenuation_level = float(match.groups()[0])
+
+            case _ :
+                logger.log("/!\\ Unhandled element in beer number {}. Element was : {}".format(recipe.number, flattened_columns[0].text))
+
+    return recipe
+
+def parse_method_timings_category(elements : list[TextElement], recipe : rcp.Recipe) -> rcp.Recipe :
+    return recipe
 
 def pre_process_malts(elements : list[TextElement]) -> list[TextElement] :
     # Sometimes, malts names are longer than one line and span on multiple lines.
@@ -723,7 +838,8 @@ def parse_ingredients_category(elements : list[TextElement], recipe : rcp.Recipe
 
     # Parse yeast
     for yeast_data in yeast_data_list :
-        pass
+        new_yeast = rcp.Yeast(name=yeast_data.text)
+        recipe.ingredients.yeasts.append(new_yeast)
 
     return recipe
 
