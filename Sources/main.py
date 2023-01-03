@@ -16,13 +16,13 @@ import pickle
 import traceback
 from typing import Optional
 
-
 import io
 from io import BufferedReader
 
 from PIL import Image
 
 from .Utils.parsing import parse_line
+from .Utils.logger import Logger
 from .Models.jsonable import Jsonable
 from .Models import recipe as rcp
 
@@ -35,13 +35,17 @@ NUMERICS_PATTERN = re.compile(r"([0-9]+\.?[0-9]*)")
 # This one is simpler as sometimes lb data is missing
 LBS_PATTERN = re.compile(r"([0-9]+\.[0-9]+)")
 
+THIS_DIR = Path(__file__).parent
+CACHE_DIRECTORY = THIS_DIR.joinpath(".cache")
+logger = Logger(CACHE_DIRECTORY.joinpath("logs.txt"))
+
 def download_pdf(url : str, output_file : Path) -> None:
     response = requests.get(url)
     match(response.status_code) :
         case 200 :
             pass
         case _ :
-            print("Could not download pdf file, error code was : {}".format(response.status_code))
+            logger.log("Could not download pdf file, error code was : {}".format(response.status_code))
             return
 
     # Create output directory if it does not exist yet
@@ -192,14 +196,14 @@ def cache_images(directory : Path, page : PageObject) :
                 decoded.save(image_path, format="PNG")
 
             except Exception as e :
-                print("Caught error while caching images for page {}".format(directory.name))
-                print(e)
+                logger.log("Caught error while caching images for page {}".format(directory.name))
+                logger.log(e)
                 continue
 
     # Sometimes we can't even list the images because of some weird errors ealier in the pdf parsing methods
     except Exception as e :
-        print("Caught error while caching images for page {}".format(directory.name))
-        print(e)
+        logger.log("Caught error while caching images for page {}".format(directory.name))
+        logger.log(e)
 
 def retrieve_single_page_from_cache(filepath : Path) -> list[TextBlock] :
     blocks : list[TextBlock] = []
@@ -504,11 +508,21 @@ def parse_method_timings_category(elements : list[TextElement], recipe : rcp.Rec
     return recipe
 
 
-def group_in_distinct_columns(elements : list[TextElement]) -> list[tuple[float,list[TextElement]]] :
-    known_x_columns : list[tuple[float, list[TextElement]]] = []
+def concatenate_columns(columns : list[tuple[float,list[TextElement]]]) -> list[TextElement]:
+    out : list[TextElement] = []
+    for column in columns :
+        first = column[1][0]
 
-    # Placement tolerance of about 1%
-    tolerance = 0.01
+        # Aggregate elements along the way ...
+        for element in column[1][1:] :
+            first.text += " " + element.text.strip()
+        first.text = first.text.strip()
+        out.append(first)
+
+    return out
+
+def group_in_distinct_columns(elements : list[TextElement], tolerance : float = 0.01) -> list[tuple[float,list[TextElement]]] :
+    known_x_columns : list[tuple[float, list[TextElement]]] = []
 
     # Discover potential columns first based on x value extracted from transformation matrix
     for elem in elements :
@@ -525,6 +539,28 @@ def group_in_distinct_columns(elements : list[TextElement]) -> list[tuple[float,
             known_x_columns.append((elem.x, [elem]))
 
     return known_x_columns
+
+def split_blocks_based_on_y_distance(elements:  list[TextElement], threshold : float = 1.5) -> list[list[TextElement]] :
+    blocks : list[list[TextElement]] = []
+    current_block : list[TextElement] = []
+    # Current block will always start with the first element
+    current_block.append(elements[0])
+    for i in range(1, len(elements)) :
+        distance = abs(elements[i - 1].y - elements[i].y)
+
+        # Maybe we've reached a new data block ?
+        if distance >= threshold :
+            blocks.append(current_block)
+            current_block = [elements[i]]
+            continue
+
+        current_block.append(elements[i])
+
+    # Pop the last element as well
+    if len(current_block) != 0 :
+        blocks.append(current_block)
+
+    return blocks
 
 def pre_process_malts(elements : list[TextElement]) -> list[TextElement] :
     # Sometimes, malts names are longer than one line and span on multiple lines.
@@ -547,25 +583,7 @@ def pre_process_malts(elements : list[TextElement]) -> list[TextElement] :
     #   some lb                        |
     #   with another trailing part    -
 
-    blocks : list[list[TextElement]] = []
-    current_block : list[TextElement] = []
-    # Current block will always start with the first element
-    current_block.append(elements[0])
-    for i in range(1, len(elements)) :
-        distance = abs(elements[i - 1].y - elements[i].y)
-
-        # Maybe we've reached a new data block ?
-        if distance >= 1.5 :
-            blocks.append(current_block)
-            current_block = [elements[i]]
-            continue
-
-        current_block.append(elements[i])
-
-    # Pop the last element as well
-    if len(current_block) != 0 :
-        blocks.append(current_block)
-
+    blocks = split_blocks_based_on_y_distance(elements)
     out : list[TextElement] = []
 
     # Now we need to order blocks with malt name, weight (grams or kg), weight (lb)
@@ -654,8 +672,46 @@ def parse_ingredients_category(elements : list[TextElement], recipe : rcp.Recipe
 
 
     # Parse hops
-    for hops_data in hops_data_list :
-        pass
+    hops_data_list.sort(key=lambda x : x.y, reverse=True)
+    assert(hops_data_list[0].text == "(g)")
+
+    # The beer #68 encodes the "Add" as "min" so we need to handle that case as well
+    assert(hops_data_list[1].text == "Add" or hops_data_list[1].text == "(min)")
+    assert(hops_data_list[2].text == "Attribute")
+
+    threshold = 1.5
+    if recipe.number == 237 or recipe.number == 250 :
+        threshold = 1.8
+
+    hops_rows = split_blocks_based_on_y_distance(hops_data_list[3:], threshold = threshold)
+    for row in hops_rows :
+        columns = group_in_distinct_columns(row, 0.005)
+        dataset = concatenate_columns(columns)
+        dataset.sort(key=lambda x : x.x)
+
+        # Sometimes, attributes is missing (this can be the case for )
+        attribute = "N/A"
+        when = ""
+        amount = math.nan
+        name = ""
+
+        columns_count = len(dataset)
+        if columns_count == 4 :
+            attribute = dataset[columns_count - 1].text
+            columns_count -= 1
+
+        when = dataset[columns_count - 1].text
+        # We need the regex pattern because on some beers, the "g" is there as well !
+        match = NUMERICS_PATTERN.match(dataset[columns_count - 2].text)
+        if match :
+            amount = float(match.groups()[0])
+        else:
+            logger.log("/!\\ Could not extract amount from beer {}. Original text was : {}".format(recipe.number, dataset[columns_count - 2].text))
+        name = dataset[0].text
+
+        new_hop = rcp.Hop(name=name, amount=amount, when=when, attribute=attribute)
+        recipe.ingredients.hops.append(new_hop)
+
 
     # Parse yeast
     for yeast_data in yeast_data_list :
@@ -731,7 +787,7 @@ def extract_body(elements : list[TextElement], recipe : rcp.Recipe) -> rcp.Recip
     if recipe.number == 307 :
         found = find_element(column_1_elements, "METHOD / TIMINGS")
         if found :
-            print("Found Method/Timings element in wrong column, moving it to column 0")
+            logger.log("Found Method/Timings element in wrong column, moving it to column 0")
             column_1_elements.remove(found)
 
             # Duplicate parts of the previous element
@@ -812,25 +868,23 @@ def extract_recipe(page : PageBlocks) -> rcp.Recipe :
 def main(args) :
     force_caching = False
     if len(args) >= 1 :
-        print("Force caching mode activated")
+        logger.log("Force caching mode activated")
         force_caching = args[0] == "true"
 
-    this_dir = Path(__file__).parent
-    cache_directory = this_dir.joinpath(".cache")
-    cached_pages_dir = cache_directory.joinpath("pages")
-    cached_blocks_dir = cache_directory.joinpath("blocks")
-    cached_pdf_raw_content = cache_directory.joinpath("pdf_raw_contents")
-    cached_images_dir = cache_directory.joinpath("images")
-    cached_extracted_recipes = cache_directory.joinpath("extracted_recipes")
+    cached_pages_dir = CACHE_DIRECTORY.joinpath("pages")
+    cached_blocks_dir = CACHE_DIRECTORY.joinpath("blocks")
+    cached_pdf_raw_content = CACHE_DIRECTORY.joinpath("pdf_raw_contents")
+    cached_images_dir = CACHE_DIRECTORY.joinpath("images")
+    cached_extracted_recipes = CACHE_DIRECTORY.joinpath("extracted_recipes")
     # Pages decoded content with PyPDF2 library
-    cached_content_dir = cache_directory.joinpath("contents")
-    #cached_custom_blocks = cache_directory.joinpath("custom_blocks")
+    cached_content_dir = CACHE_DIRECTORY.joinpath("contents")
+    #cached_custom_blocks = CACHE_DIRECTORY.joinpath("custom_blocks")
 
-    pdf_file = cache_directory.joinpath("diydog-2022.pdf")
+    pdf_file = CACHE_DIRECTORY.joinpath("diydog-2022.pdf")
     if not pdf_file.exists() :
-        print("Downloading brewdog's Diydog pdf booklet ...")
+        logger.log("Downloading brewdog's Diydog pdf booklet ...")
         download_pdf(C_DIYDOG_URL, pdf_file)
-        print("-> OK : Downloading succeeded ! Pdf file was downloaded at : {}".format(pdf_file))
+        logger.log("-> OK : Downloading succeeded ! Pdf file was downloaded at : {}".format(pdf_file))
         # Triggers force caching because we need to regenerate everything
         force_caching = True
 
@@ -838,7 +892,7 @@ def main(args) :
 
     # Extract pages for caching purposes
     if force_caching :
-        print("Extracting all beer pages to {}".format(cached_pages_dir))
+        logger.log("Extracting all beer pages to {}".format(cached_pages_dir))
         with open(pdf_file, "rb") as file :
             reader = PyPDF2.PdfFileReader(file)
             # Page 22 is the first beer
@@ -849,33 +903,33 @@ def main(args) :
 
             for i in range(start_page, end_page) :
                 beer_index = i - start_page + 1
-                print("Extracting page : {}, beer index : {}".format(i, beer_index))
+                logger.log("Extracting page : {}, beer index : {}".format(i, beer_index))
                 encoded_name = "page_{}".format(beer_index)
                 page = reader.getPage(i)
 
-                print("Caching page to disk ...")
+                logger.log("Caching page to disk ...")
                 cache_single_pdf_page(cached_pages_dir.joinpath(encoded_name + ".pdf"), page=page)
                 page_images_dir = cached_images_dir.joinpath(encoded_name)
 
-                print("Caching images to disk ...")
+                logger.log("Caching images to disk ...")
                 cache_images(page_images_dir, page)
                 content_filepath = cached_content_dir.joinpath(encoded_name + ".json")
 
 
                 # Fetch raw contents and manually parse it (works better than brute text extraction from pypdf2)
-                print("Extracting textual content of page ...")
+                logger.log("Extracting textual content of page ...")
                 str_contents = bytes(page.get_contents().get_data()).decode("utf-8")
                 cache_pdf_raw_contents(cached_pdf_raw_content.joinpath(encoded_name + ".txt"), str_contents )
 
                 raw_blocks = extract_raw_text_blocks_from_content(str_contents)
-                print("Caching raw text blocks ...")
+                logger.log("Caching raw text blocks ...")
                 cache_raw_blocks(cached_blocks_dir.joinpath(encoded_name + ".txt"), raw_blocks )
 
-                print("Parsing raw text blocks into pre-processed text blocks")
+                logger.log("Parsing raw text blocks into pre-processed text blocks")
                 text_blocks = text_blocks_from_raw_blocks(raw_blocks)
 
                 # Post processing of text blocks :
-                print("Post processing text blocks ...")
+                logger.log("Post processing text blocks ...")
                 temp_blocks = []
                 for block in text_blocks :
                     # Strip whitespaces and removes empty items
@@ -885,7 +939,7 @@ def main(args) :
 
                 text_blocks = temp_blocks
 
-                print("Caching preprocessed contents ...")
+                logger.log("Caching preprocessed contents ...")
                 # Adding page blocks now, so that we
                 # don't have to parse them again
                 page_blocks = PageBlocks()
@@ -896,16 +950,16 @@ def main(args) :
 
 
 
-        print("-> OK : Pages extracted successfully in {}".format(cached_pages_dir))
+        logger.log("-> OK : Pages extracted successfully in {}".format(cached_pages_dir))
 
     # List already cached pages
-    print("Listing available pdf pages ...")
+    logger.log("Listing available pdf pages ...")
     pages_list = list_pages(cached_pages_dir, "page_", ".pdf")
-    print("-> OK : Found {} pages in {}".format(len(pages_list), cached_pages_dir))
+    logger.log("-> OK : Found {} pages in {}".format(len(pages_list), cached_pages_dir))
 
-    print("Listing available json content from pages ...")
+    logger.log("Listing available json content from pages ...")
     pages_content_list = list_pages(cached_content_dir, "page_", ".json")
-    print("-> OK : Found {} pages in {}".format(len(pages_list), cached_pages_dir))
+    logger.log("-> OK : Found {} pages in {}".format(len(pages_list), cached_pages_dir))
     for page in pages_content_list :
         page_index = page[0]
         found_elem = [x for x in pages_content if  x.index == page_index ]
@@ -913,7 +967,7 @@ def main(args) :
         if len(found_elem) != 0 :
             continue
 
-        print("Reading back cached text content from json file {}".format(page[1].name))
+        logger.log("Reading back cached text content from json file {}".format(page[1].name))
         page_blocks = PageBlocks()
         page_blocks.index = page_index
         with open(page[1], "r") as file :
@@ -921,35 +975,35 @@ def main(args) :
             page_blocks.from_json(data)
         pages_content.append(page_blocks)
 
-    print("Parsing actual recipe content from extracted text blocks")
+    logger.log("Parsing actual recipe content from extracted text blocks")
     recipes_list : list[rcp.Recipe] = []
     for page in pages_content :
-        print("Parsing recipe from page {}".format(page.index))
+        logger.log("Parsing recipe from page {}".format(page.index))
         try :
             new_recipe = extract_recipe(page)
             recipes_list.append(new_recipe)
         except Exception as e :
-            print("Could not extract recipe from beer {}".format(page.index))
-            print("Error was : {}".format(e))
-            print(traceback.format_exc())
+            logger.log("Could not extract recipe from beer {}".format(page.index))
+            logger.log("Error was : {}".format(e))
+            logger.log(traceback.format_exc())
 
     # Dump recipes on disk now !
     if not cached_extracted_recipes.exists() :
         cached_extracted_recipes.mkdir(parents=True)
 
-    print("Dumping extracted recipes on disk now !")
+    logger.log("Dumping extracted recipes on disk now !")
     for recipe in recipes_list :
-        print("Dumping recipe {}, number {}".format(recipe.name, recipe.number))
+        logger.log("Dumping recipe {}, number {}".format(recipe.name, recipe.number))
         filename = "recipe_{}.json".format(recipe.number)
         filepath = cached_extracted_recipes.joinpath(filename)
         with open(filepath, "w") as file :
             json.dump(recipe.to_json(), file,indent=4)
 
-    print("Done !")
+    logger.log("Done !")
 
 if __name__ == "__main__" :
     try :
         main(sys.argv[1:])
     except Exception as e :
-        print("-> ERROR : Caught exception while running script, error was  : {}".format(e))
+        logger.log("-> ERROR : Caught exception while running script, error was  : {}".format(e))
         raise e
