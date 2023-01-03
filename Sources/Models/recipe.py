@@ -221,6 +221,7 @@ class Twist(Jsonable) :
     name : str = ""
     amount : Optional[float] = None # This is optional as some twists are simply text hints/techniques
                                     # If set, this field stands for an amount in grams
+    when : Optional[str] = None # used when the amount is provided
 
     def to_json(self) -> dict:
         return self.__dict__
@@ -231,6 +232,8 @@ class Twist(Jsonable) :
         self.name = self._read_prop("name", content, "")
         if "amount" in content and content["amount"]:
             self.amount = content["amount"]
+        if "when" in content and content["when"] :
+            self.when = content["when"]
 
 
 @dataclass

@@ -31,6 +31,9 @@ C_DIYDOG_URL = "https://brewdogmedia.s3.eu-west-2.amazonaws.com/docs/2019+DIY+DO
 
 GRAMS_PATTERN = re.compile(r"([0-9]+\.?[0-9]*) *([k]?[g])")
 NUMERICS_PATTERN = re.compile(r"([0-9]+\.?[0-9]*)")
+DEGREES_PATTERN = re.compile(r"([0-9]+\.?[0-9]*)[ ]?°[CF]")
+DEGREES_C_PATTERN = re.compile(r"([0-9]+\.?[0-9]*)[ ]?°C")
+DEGREES_F_PATTERN = re.compile(r"([0-9]+\.?[0-9]*)[ ]?°F")
 
 # This one is simpler as sometimes lb data is missing
 LBS_PATTERN = re.compile(r"([0-9]+\.[0-9]+)")
@@ -467,6 +470,13 @@ def find_element(elements : list[TextElement], text : str) -> Optional[TextEleme
             return element
     return None
 
+def find_element_substring(elements : list[TextElement], text : str) -> Optional[TextElement] :
+    """Returns the first element in the given collection whose text contains the probing text. Exact match is not required"""
+    for element in elements :
+        if text in element.text :
+            return element
+    return None
+
 # Variant of the above one, but we enforce the object state
 # used essentially to cover the use case where data *needs* to be there
 def find_element_strict(elements : list[TextElement], text : str) -> TextElement :
@@ -569,6 +579,13 @@ def parse_this_beer_is_category(elements : list[TextElement], recipe : rcp.Recip
     recipe.description.text = description.strip()
     return recipe
 
+def line_from_text_elements(elements: list[TextElement]) -> str :
+    out = ""
+    for elem in elements :
+        out += elem.text.strip() + " "
+    out.strip()
+    return out
+
 def parse_basics_category(elements : list[TextElement], recipe : rcp.Recipe) -> rcp.Recipe :
     elements.sort(key=lambda x : x.y, reverse=True)
     rows = split_blocks_based_on_y_distance(elements)
@@ -585,8 +602,6 @@ def parse_basics_category(elements : list[TextElement], recipe : rcp.Recipe) -> 
         for raw_column in raw_columns :
             filtered_raw.append((raw_column[0], remove_exact_doubles(raw_column[1])))
 
-        if recipe.number == 290 :
-            pass
         flattened_columns = concatenate_columns(filtered_raw)
         flattened_columns.sort(key=lambda x : x.x)
 
@@ -679,6 +694,132 @@ def parse_basics_category(elements : list[TextElement], recipe : rcp.Recipe) -> 
     return recipe
 
 def parse_method_timings_category(elements : list[TextElement], recipe : rcp.Recipe) -> rcp.Recipe :
+
+    elements.sort(key=lambda x : x.y, reverse=True)
+    mash_temp_elem = find_element_strict(elements, "MASH TEMP")
+    # Some bers are missing the "Fermentation" element as well, such as the #406 one
+    fermentation_elem = find_element(elements, "FERMENTATION")
+
+    # Not all beers have the "Twist" element
+    twist_elem = find_element_substring(elements, "TWIST")
+    # Pops here and there for beer #265 for instance, goes along with the Twist/Brewhouse one
+    additions_elem : Optional[TextElement] = find_element(elements, "ADDITIONS")
+
+    mash_temp_data_list : list[TextElement] = []
+    fermentation_data_list : list[TextElement] = []
+    twist_data_list : list[TextElement] = []
+
+    # Subcategorizing data
+    working_list : list[TextElement] = []
+    for element in elements :
+        if element == mash_temp_elem :
+            working_list = mash_temp_data_list
+            continue
+        if fermentation_elem and element == fermentation_elem :
+            working_list = fermentation_data_list
+            continue
+        if twist_elem and element == twist_elem :
+            working_list = twist_data_list
+            continue
+
+        # Skip this one
+        if element == additions_elem :
+            continue
+
+        # Consume element
+        working_list.append(element)
+
+    # Sort all three lists
+    mash_temp_data_list.sort(key=lambda x : x.y, reverse=True)
+    fermentation_data_list.sort(key=lambda x : x.y, reverse=True)
+    twist_data_list.sort(key=lambda x : x.y, reverse=True)
+
+    method_timings = rcp.MethodTimings()
+
+    # Extract mash temps
+    mash_temps_rows = split_blocks_based_on_y_distance(mash_temp_data_list)
+    for row in mash_temps_rows :
+        columns = group_in_distinct_columns(row)
+        flattened_column = concatenate_columns(columns)
+        flattened_column.sort(key=lambda x : x.x)
+
+        mash_temp = rcp.MashTemp()
+
+        # Extract Celsius degrees from mash temp
+        matches = DEGREES_PATTERN.findall(flattened_column[0].text)
+        if len(matches) != 0 :
+            mash_temp.celsius = float(matches[0])
+        else :
+            logger.log("/!\\ Caught weird looking patterns for Celsius degrees for beer {} when parsing mash temps data : {}".format(recipe.number, flattened_column[0].text))
+
+        if recipe.number == 220 :
+            pass
+
+        # Repeat for Fahrenheit degrees from mash temp
+        matches = DEGREES_PATTERN.findall(flattened_column[1].text)
+        if len(matches) != 0 :
+            mash_temp.fahrenheit = float(matches[0])
+        else :
+            logger.log("/!\\ Caught weird looking patterns for Fahrenheit degrees for beer {} when parsing mash temps data : {}".format(recipe.number, flattened_column[1].text))
+
+        # Not all beers have timing data for mash temperatures
+        if len(flattened_column) == 3 :
+            matches = NUMERICS_PATTERN.findall(flattened_column[2].text)
+            if len(matches) != 0 :
+                mash_temp.time = float(matches[0])
+            else :
+                logger.log("/!\\ Caught weird looking patterns for timing for beer {} when parsing mash temps data : {}".format(recipe.number, flattened_column[2].text))
+
+        method_timings.mash_temps.append(mash_temp)
+
+    # Extract fermentation steps
+    if fermentation_elem :
+        if len(fermentation_data_list) != 2 :
+            logger.log("Caught weird looking beer with more data in fermentation steps than expected. Beer number : {}".format(recipe.number))
+
+        # Handle fermentation steps as well
+        # Note that the protections below are there to protect against the infamous secret beer #89 which does not come with ingredients nor
+        # Mashing/Fermentation data
+        matches = DEGREES_PATTERN.findall(fermentation_data_list[0].text)
+        if len(matches) != 0 :
+            method_timings.fermentation.celsius = float(matches[0])
+        else :
+            logger.log("/!\\ Caught weird looking patterns for fermentation temperature for beer {} when parsing mash temps data : {}".format(recipe.number, fermentation_data_list[0].text))
+
+        matches = DEGREES_PATTERN.findall(fermentation_data_list[0].text)
+        if len(matches) != 0 :
+            method_timings.fermentation.fahrenheit = float(matches[0])
+        else :
+            logger.log("/!\\ Caught weird looking patterns for fermentation temperature for beer {} when parsing mash temps data : {}".format(recipe.number, fermentation_data_list[0].text))
+
+    # Parse twists, if any
+    if twist_elem and len(twist_data_list) != 0:
+        method_timings.twists = []
+        twist_rows = split_blocks_based_on_y_distance(twist_data_list)
+        for row in twist_rows :
+            columns = group_in_distinct_columns(row)
+            flattened_column = concatenate_columns(columns)
+            flattened_column.sort(key=lambda x : x.x)
+
+            twist = rcp.Twist()
+            twist.name = flattened_column[0].text
+
+            # Some twists are decoupled with the amount (g) and Time columns
+            if len(flattened_column) == 3 :
+                matches = NUMERICS_PATTERN.findall(flattened_column[1].text)
+                if len(matches) != 0 :
+                    twist.amount = float(matches[0])
+                else :
+                    twist.amount = math.nan
+                    logger.log("/!\\ Missing data for twist amount in beer {}. Parsed block was : {}".format(recipe.number, line_from_text_elements(flattened_column)))
+
+                # Misformatting strikes again !
+                if recipe.number == 103 :
+                    twist.when = flattened_column[1].text
+
+            method_timings.twists.append(twist)
+
+    recipe.method_timings = method_timings
     return recipe
 
 def pre_process_malts(elements : list[TextElement]) -> list[TextElement] :
@@ -844,12 +985,42 @@ def parse_ingredients_category(elements : list[TextElement], recipe : rcp.Recipe
     return recipe
 
 def parse_food_pairing_category(elements : list[TextElement], recipe : rcp.Recipe) -> rcp.Recipe :
+    elements.sort(key=lambda x : x.y, reverse=True)
+    rows = split_blocks_based_on_y_distance(elements)
+    food_pairing = rcp.FoodPairing()
+    for row in rows :
+        # Skipping this element, we don't need it now
+        if find_element(row, "FOOD PAIRING") :
+            continue
+
+        raw_columns = group_in_distinct_columns(row)
+        flattened_columns = concatenate_columns(raw_columns)
+        flattened_columns.sort(key=lambda x : x.x)
+
+        for dataset in flattened_columns :
+            food_pairing.pairings.append(dataset.text)
+
+    recipe.food_pairing = food_pairing
     return recipe
 
 def parse_brewers_tip_category(elements : list[TextElement], recipe : rcp.Recipe) -> rcp.Recipe :
+    description = ""
+
+    if recipe.number == 406 :
+        pass
+    # Pop the first element "BREWERS TIP", we don't want that in the description
+    for elem in elements[1:] :
+        description += elem.text + " "
+    recipe.brewers_tip.text = description.strip()
     return recipe
 
 def parse_packaging_category(elements : list[TextElement], recipe : rcp.Recipe) -> rcp.Recipe :
+    # TODO : find packaging based on image aspect ratio and / or the sometimes mentioned 'keg only'
+    packaging = rcp.Packaging()
+    if find_element(elements, "KEG ONLY") :
+        packaging.type = rcp.PackagingType.Keg
+
+    recipe.packaging = packaging
     return recipe
 
 def extract_body(elements : list[TextElement], recipe : rcp.Recipe) -> rcp.Recipe :
@@ -884,7 +1055,7 @@ def extract_body(elements : list[TextElement], recipe : rcp.Recipe) -> rcp.Recip
     # being perfectly aligned to the eye on the final rendered page
     column_0_x_start = this_beer_is_elem.x - 20
     column_1_x_start = ingredients_elem.x - 20
-    column_2_x_start = packaging_elem.x
+    column_2_x_start = packaging_elem.x - 20
 
     # Find the misplaced "MALT" text element, which is written in a weird coordinate system
     # And put that one right below the ingredients category
