@@ -22,7 +22,16 @@ python -m pip install -r requirements.txt
 ```
 
 ## Run the script
-Simply call the script as-is : `python main.py`.
-It will first download the pdf file locally and cache it in the [.cache](Sources/.cache/) directory (created upon first run), so that we don't need to download it anymore after that.
-Note that the downloading process will occur *next* to the script file, which was easier for development purposes. As such, the ***.cache** directory is ignored by git.
+The [main.py](Sources/main.py) is part of a larger python package and thus shall be called as a python module like this :
+```bash
+python -m Sources.main
+```
+
+It will first download the pdf file locally and cache it in the ***.cache*** directory (created upon first run), so that we don't need to download it anymore after that.
+Note that the ***.cache*** directory will be created *next* to the script file, within the [Sources](Sources) directory, which was easier for development purposes.
+
+## Output data
+For now, the parsed recipes are stored in the form of json files within the ***.cache*** directory, in a subfolder called "***extracted_recipes***".
+They are produced by serializing the **Recipe** class, found in the [recipe.py](Sources/Models/recipe.py) file and contain all parsed data (except images and pdf pages which are registered under the form of filepath in the json file ; they are indirect object references).
+They can be used as-is, despite being quite low-level, or they can be used throughout more evolved services (such as a web service / Rest Api)
 
