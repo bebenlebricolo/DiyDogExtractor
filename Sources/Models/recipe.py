@@ -130,12 +130,12 @@ class Ingredients(Jsonable) :
     MALTS_KEY = "malts"
     HOPS_KEY = "hops"
     YEASTS_KEY = "yeasts"
-    DESCRIPTION_KEY = "description"
+    DESCRIPTION_KEY = "alternativeDescription"
 
     malts : list[Malt] = field(default_factory=list)
     hops : list[Hop] = field(default_factory=list)
     yeasts : list[Yeast] = field(default_factory=list)
-    description : Optional[str] = None
+    alternative_description : Optional[str] = None
 
     def to_json(self) -> dict:
         malts_list = [x.to_json() for x in self.malts]
@@ -146,7 +146,7 @@ class Ingredients(Jsonable) :
             self.MALTS_KEY : malts_list,
             self.HOPS_KEY : hops_list,
             self.YEASTS_KEY : yeast_list,
-            self.DESCRIPTION_KEY : self.description
+            self.DESCRIPTION_KEY : self.alternative_description
         }
 
     def from_json(self, content: dict) -> None:
@@ -172,7 +172,7 @@ class Ingredients(Jsonable) :
                 self.yeasts.append(new_yeast)
 
         if self.DESCRIPTION_KEY in content :
-            self.description = content[self.DESCRIPTION_KEY]
+            self.alternative_description = content[self.DESCRIPTION_KEY]
 
 
 @dataclass

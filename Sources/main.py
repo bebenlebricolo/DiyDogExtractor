@@ -59,6 +59,11 @@ def download_pdf(url : str, output_file : Path) -> None:
     with open(output_file, "wb") as file :
         file.write(response.content)
 
+def celsius_to_fahrenheit(value : float) -> float :
+    return (value* 1.8) + 32
+
+def fahrenheit_to_celsius(value : float) -> float :
+    return (value - 32)/1.8
 
 # Useful doc : https://pypdf2.readthedocs.io/en/latest/user/extract-text.html
 
@@ -661,7 +666,7 @@ def parse_basics_category(elements : list[TextElement], recipe : rcp.Recipe) -> 
                 value = flattened_rows[1].text
                 fval : float = 0.0
                 if value == "N/A" :
-                    fval = math.nan
+                    fval = -1.0
                 else :
                     try :
                         fval = float(NUMERICS_PATTERN.findall(flattened_rows[1].text)[0])
@@ -747,31 +752,44 @@ def parse_method_timings_category(elements : list[TextElement], recipe : rcp.Rec
             method_timings.mash_tips.append(flattened_row[0].text)
         else :
             mash_temp = rcp.MashTemp()
+            if len(flattened_row) == 2 :
+                matches = DEGREES_PATTERN.findall(flattened_row[0].text)
+                if len(matches) != 0 :
+                    mash_temp.celsius = float(matches[0])
+                    mash_temp.fahrenheit = celsius_to_fahrenheit(mash_temp.celsius)
+                else :
+                    logger.log("/!\\ Could not read temperature from mash instructions for beer {}. Line was {}".format(recipe.number, line_from_text_elements(flattened_row)))
 
-            # Extract Celsius degrees from mash temp
-            matches = DEGREES_PATTERN.findall(flattened_row[0].text)
-            if len(matches) != 0 :
-                mash_temp.celsius = float(matches[0])
-            else :
-                logger.log("/!\\ Caught weird looking patterns for Celsius degrees for beer {} when parsing mash temps data : {}".format(recipe.number, flattened_row[0].text))
-
-            if recipe.number == 220 :
-                pass
-
-            # Repeat for Fahrenheit degrees from mash temp
-            matches = DEGREES_PATTERN.findall(flattened_row[1].text)
-            if len(matches) != 0 :
-                mash_temp.fahrenheit = float(matches[0])
-            else :
-                logger.log("/!\\ Caught weird looking patterns for Fahrenheit degrees for beer {} when parsing mash temps data : {}".format(recipe.number, flattened_row[1].text))
-
-            # Not all beers have timing data for mash temperatures
-            if len(flattened_row) == 3 :
-                matches = NUMERICS_PATTERN.findall(flattened_row[2].text)
+                matches = NUMERICS_PATTERN.findall(flattened_row[1].text)
                 if len(matches) != 0 :
                     mash_temp.time = float(matches[0])
                 else :
-                    logger.log("/!\\ Caught weird looking patterns for timing for beer {} when parsing mash temps data : {}".format(recipe.number, flattened_row[2].text))
+                    logger.log("/!\\ Could not read timing from mash instructions for beer {}. Line was {}".format(recipe.number, line_from_text_elements(flattened_row)))
+            else :
+                # Extract Celsius degrees from mash temp
+                matches = DEGREES_PATTERN.findall(flattened_row[0].text)
+                if len(matches) != 0 :
+                    mash_temp.celsius = float(matches[0])
+                else :
+                    logger.log("/!\\ Caught weird looking patterns for Celsius degrees for beer {} when parsing mash temps data : {}".format(recipe.number, flattened_row[0].text))
+
+                if recipe.number == 220 :
+                    pass
+
+                # Repeat for Fahrenheit degrees from mash temp
+                matches = DEGREES_PATTERN.findall(flattened_row[1].text)
+                if len(matches) != 0 :
+                    mash_temp.fahrenheit = float(matches[0])
+                else :
+                    logger.log("/!\\ Caught weird looking patterns for Fahrenheit degrees for beer {} when parsing mash temps data : {}".format(recipe.number, flattened_row[1].text))
+
+                # Not all beers have timing data for mash temperatures
+                if len(flattened_row) == 3 :
+                    matches = NUMERICS_PATTERN.findall(flattened_row[2].text)
+                    if len(matches) != 0 :
+                        mash_temp.time = float(matches[0])
+                    else :
+                        logger.log("/!\\ Caught weird looking patterns for timing for beer {} when parsing mash temps data : {}".format(recipe.number, flattened_row[2].text))
 
             method_timings.mash_temps.append(mash_temp)
 
@@ -820,7 +838,7 @@ def parse_method_timings_category(elements : list[TextElement], recipe : rcp.Rec
                 if len(matches) != 0 :
                     twist.amount = float(matches[0])
                 else :
-                    twist.amount = math.nan
+                    twist.amount = -1.0
                     logger.log("/!\\ Missing data for twist amount in beer {}. Parsed block was : {}".format(recipe.number, line_from_text_elements(flattened_row)))
 
                 # Misformatting strikes again !
@@ -886,12 +904,12 @@ def parse_ingredients_category(elements : list[TextElement], recipe : rcp.Recipe
 
     # Beer without ingredients, the beer #89 is one of them
     if not malt_elem and not hops_elem and not yeast_elem :
-        recipe.ingredients.description = ""
+        recipe.ingredients.alternative_description = ""
         for elem in elements :
             if elem.text == "INGREDIENTS" :
                 continue
-            recipe.ingredients.description += elem.text + " "
-        recipe.ingredients.description = recipe.ingredients.description.strip()
+            recipe.ingredients.alternative_description += elem.text + " "
+        recipe.ingredients.alternative_description = recipe.ingredients.alternative_description.strip()
         return recipe
 
     malt_data_list : list[TextElement] = []
@@ -966,7 +984,7 @@ def parse_ingredients_category(elements : list[TextElement], recipe : rcp.Recipe
         # Sometimes, attributes is missing (this can be the case for )
         attribute = "N/A"
         when = ""
-        amount = math.nan
+        amount = -1.0
         name = ""
 
         columns_count = len(dataset)
@@ -1309,7 +1327,7 @@ def main(args) :
         filename = "recipe_{}.json".format(recipe.number)
         filepath = cached_extracted_recipes.joinpath(filename)
         with open(filepath, "w") as file :
-            json.dump(recipe.to_json(), file,indent=4)
+            json.dump(recipe.to_json(), file, indent=4)
 
     logger.log("Done !")
 

@@ -62,7 +62,7 @@ class TestRecipeModels(unittest.TestCase) :
             Yeast("test yeast 2")
         ]
         # No description, this is voluntary
-        ingredients.description = None
+        ingredients.alternative_description = None
 
         return ingredients
 
