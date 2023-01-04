@@ -202,6 +202,7 @@ class MashTemp(Temperature) :
     time : float = 0.0          # in minutes
 
     def from_json(self, content: dict) -> None:
+        self.__init__()
         super().from_json(content)
         self.time = self._read_prop("time", content, 0.0)
 
@@ -210,11 +211,17 @@ class MashTemp(Temperature) :
 
 @dataclass
 class Fermentation(Temperature) :
+    tips : list[str] = field(default_factory=list)
+
     def from_json(self, content: dict) -> None:
-        return super().from_json(content)
+        self.__init__()
+        super().from_json(content)
+        if "tips" in content:
+            for tip in content["tips"] :
+                self.tips.append(tip)
 
     def to_json(self) -> dict:
-        return super().to_json()
+        return self.__dict__
 
 @dataclass
 class Twist(Jsonable) :
@@ -239,13 +246,14 @@ class Twist(Jsonable) :
 @dataclass
 class MethodTimings(Jsonable) :
     mash_temps : list[MashTemp] = field(default_factory=list)
+    mash_tips : list[str] = field(default_factory=list)
     fermentation : Fermentation = field(default_factory=Fermentation)
     twists : Optional[list[Twist]] = None
 
     def to_json(self) -> dict:
-        mash_temp_list = [x.to_json() for x in self.mash_temps]
         out = {
-            "mashTemps" : mash_temp_list,
+            "mashTemps" : [x.to_json() for x in self.mash_temps],
+            "mashTips" : [x for x in self.mash_tips],
             "fermentation" : self.fermentation.to_json(),
             "twists" : None
         }
@@ -255,12 +263,18 @@ class MethodTimings(Jsonable) :
         return out
 
     def from_json(self, content: dict) -> None:
+        self.__init__()
+
         if "mashTemps" in content :
             self.mash_temps = []
             for temp in content["mashTemps"] :
                 new_temp = MashTemp()
                 new_temp.from_json(temp)
                 self.mash_temps.append(new_temp)
+
+        if "mashTips" in content :
+            for tip in content["mashTips"] :
+                self.mash_tips.append(tip)
 
         if "fermentation" in content :
             self.fermentation.from_json(content["fermentation"])

@@ -602,25 +602,25 @@ def parse_basics_category(elements : list[TextElement], recipe : rcp.Recipe) -> 
         for raw_column in raw_columns :
             filtered_raw.append((raw_column[0], remove_exact_doubles(raw_column[1])))
 
-        flattened_columns = concatenate_columns(filtered_raw)
-        flattened_columns.sort(key=lambda x : x.x)
+        flattened_rows = concatenate_columns(filtered_raw)
+        flattened_rows.sort(key=lambda x : x.x)
 
-        match flattened_columns[0].text :
+        match flattened_rows[0].text :
             case "VOLUME" | "BOIL VOLUME" :
                 volume = rcp.Volume()
 
                 # Extract litres
-                match = NUMERICS_PATTERN.match(flattened_columns[1].text)
+                match = NUMERICS_PATTERN.match(flattened_rows[1].text)
                 if match :
                     volume.litres = float(match.groups()[0])
 
                 # Extract galons
-                match = NUMERICS_PATTERN.match(flattened_columns[2].text)
+                match = NUMERICS_PATTERN.match(flattened_rows[2].text)
                 if match :
                     volume.galons = float(match.groups()[0])
 
                 # Dispatch the volume accordingly
-                if flattened_columns[0].text == "VOLUME" :
+                if flattened_rows[0].text == "VOLUME" :
                     recipe.basics.volume = volume
                 else :
                     recipe.basics.boil_volume = volume
@@ -629,14 +629,14 @@ def parse_basics_category(elements : list[TextElement], recipe : rcp.Recipe) -> 
                 if recipe.basics.abv != 0.0 :
                     continue
                 # Parsing ABV in case it was not extracted from header yet ; There should only be 2 columns here
-                match = NUMERICS_PATTERN.match(flattened_columns[1].text)
+                match = NUMERICS_PATTERN.match(flattened_rows[1].text)
                 if match :
                     recipe.basics.abv = float(match.groups()[0])
 
             case "TARGET OG" :
                 if recipe.basics.target_og != 0.0 :
                     continue
-                value = flattened_columns[1].text
+                value = flattened_rows[1].text
                 recipe.basics.target_og = float(value)
 
                 # Again, ugly stuff ... gravities were swapped, and OG in "Basics" section
@@ -646,50 +646,50 @@ def parse_basics_category(elements : list[TextElement], recipe : rcp.Recipe) -> 
 
             case "TARGET FG" :
                 try :
-                    matches = NUMERICS_PATTERN.findall(flattened_columns[1].text)
+                    matches = NUMERICS_PATTERN.findall(flattened_rows[1].text)
                     # We're only taking the first one, by convention
                     # Some beers have a range (such as the beer #192) which we can't reproduce with a single
                     # value without adding extra complexity to the data model, so taking the first value will do the job instead
                     recipe.basics.target_fg = float(matches[0])
                 except Exception as e :
-                    logger.log("/!\\ Caught weird stuff in Target FG for beer {}. Text was : {}".format(recipe.number, flattened_columns[1]))
+                    logger.log("/!\\ Caught weird stuff in Target FG for beer {}. Text was : {}".format(recipe.number, flattened_rows[1]))
 
 
             # Beers #207, #213; #214, #215 have a weird field named TARGET EBC WORT that needs to be handled as a regular ebc
             case "EBC" | "SRM" | "TARGET EBC WORT" :
                 # Some beers (such as the #16th one) have N/A mention for EBC and SRM
-                value = flattened_columns[1].text
+                value = flattened_rows[1].text
                 fval : float = 0.0
                 if value == "N/A" :
                     fval = math.nan
                 else :
                     try :
-                        fval = float(NUMERICS_PATTERN.findall(flattened_columns[1].text)[0])
+                        fval = float(NUMERICS_PATTERN.findall(flattened_rows[1].text)[0])
                     except Exception as e:
-                        logger.log("/!\\ Could not convert value for {} because {}.".format(flattened_columns[0].text, e))
+                        logger.log("/!\\ Could not convert value for {} because {}.".format(flattened_rows[0].text, e))
                         continue
 
                 # Same treatment for both categories
-                if "EBC" in flattened_columns[0].text :
+                if "EBC" in flattened_rows[0].text :
                     recipe.basics.ebc = fval
                 else :
                     recipe.basics.srm = fval
 
             case "PH" :
                 # Ph is missing on some recipes, so we can try to infer it
-                if len(flattened_columns) == 2 :
-                    recipe.basics.ph = float(flattened_columns[1].text)
+                if len(flattened_rows) == 2 :
+                    recipe.basics.ph = float(flattened_rows[1].text)
                 else :
                     # 4.4 seems a pretty common value in BrewDog's beers
                     recipe.basics.ph = 4.4
 
             case "ATTENUATION LEVEL" :
-                match = NUMERICS_PATTERN.match(flattened_columns[1].text)
+                match = NUMERICS_PATTERN.match(flattened_rows[1].text)
                 if match :
                     recipe.basics.attenuation_level = float(match.groups()[0])
 
             case _ :
-                logger.log("/!\\ Unhandled element in beer number {}. Element was : {}".format(recipe.number, flattened_columns[0].text))
+                logger.log("/!\\ Unhandled element in beer number {}. Element was : {}".format(recipe.number, flattened_rows[0].text))
 
     return recipe
 
@@ -740,57 +740,67 @@ def parse_method_timings_category(elements : list[TextElement], recipe : rcp.Rec
     mash_temps_rows = split_blocks_based_on_y_distance(mash_temp_data_list)
     for row in mash_temps_rows :
         columns = group_in_distinct_columns(row)
-        flattened_column = concatenate_columns(columns)
-        flattened_column.sort(key=lambda x : x.x)
+        flattened_row = concatenate_columns(columns)
+        flattened_row.sort(key=lambda x : x.x)
 
-        mash_temp = rcp.MashTemp()
-
-        # Extract Celsius degrees from mash temp
-        matches = DEGREES_PATTERN.findall(flattened_column[0].text)
-        if len(matches) != 0 :
-            mash_temp.celsius = float(matches[0])
+        if len(flattened_row) == 1 :
+            method_timings.mash_tips.append(flattened_row[0].text)
         else :
-            logger.log("/!\\ Caught weird looking patterns for Celsius degrees for beer {} when parsing mash temps data : {}".format(recipe.number, flattened_column[0].text))
+            mash_temp = rcp.MashTemp()
 
-        if recipe.number == 220 :
-            pass
-
-        # Repeat for Fahrenheit degrees from mash temp
-        matches = DEGREES_PATTERN.findall(flattened_column[1].text)
-        if len(matches) != 0 :
-            mash_temp.fahrenheit = float(matches[0])
-        else :
-            logger.log("/!\\ Caught weird looking patterns for Fahrenheit degrees for beer {} when parsing mash temps data : {}".format(recipe.number, flattened_column[1].text))
-
-        # Not all beers have timing data for mash temperatures
-        if len(flattened_column) == 3 :
-            matches = NUMERICS_PATTERN.findall(flattened_column[2].text)
+            # Extract Celsius degrees from mash temp
+            matches = DEGREES_PATTERN.findall(flattened_row[0].text)
             if len(matches) != 0 :
-                mash_temp.time = float(matches[0])
+                mash_temp.celsius = float(matches[0])
             else :
-                logger.log("/!\\ Caught weird looking patterns for timing for beer {} when parsing mash temps data : {}".format(recipe.number, flattened_column[2].text))
+                logger.log("/!\\ Caught weird looking patterns for Celsius degrees for beer {} when parsing mash temps data : {}".format(recipe.number, flattened_row[0].text))
 
-        method_timings.mash_temps.append(mash_temp)
+            if recipe.number == 220 :
+                pass
+
+            # Repeat for Fahrenheit degrees from mash temp
+            matches = DEGREES_PATTERN.findall(flattened_row[1].text)
+            if len(matches) != 0 :
+                mash_temp.fahrenheit = float(matches[0])
+            else :
+                logger.log("/!\\ Caught weird looking patterns for Fahrenheit degrees for beer {} when parsing mash temps data : {}".format(recipe.number, flattened_row[1].text))
+
+            # Not all beers have timing data for mash temperatures
+            if len(flattened_row) == 3 :
+                matches = NUMERICS_PATTERN.findall(flattened_row[2].text)
+                if len(matches) != 0 :
+                    mash_temp.time = float(matches[0])
+                else :
+                    logger.log("/!\\ Caught weird looking patterns for timing for beer {} when parsing mash temps data : {}".format(recipe.number, flattened_row[2].text))
+
+            method_timings.mash_temps.append(mash_temp)
 
     # Extract fermentation steps
     if fermentation_elem :
-        if len(fermentation_data_list) != 2 :
-            logger.log("Caught weird looking beer with more data in fermentation steps than expected. Beer number : {}".format(recipe.number))
+        fermentation_rows = split_blocks_based_on_y_distance(fermentation_data_list)
+        for row in fermentation_rows :
+            columns = group_in_distinct_columns(row)
+            flattened_row = concatenate_columns(columns)
 
-        # Handle fermentation steps as well
-        # Note that the protections below are there to protect against the infamous secret beer #89 which does not come with ingredients nor
-        # Mashing/Fermentation data
-        matches = DEGREES_PATTERN.findall(fermentation_data_list[0].text)
-        if len(matches) != 0 :
-            method_timings.fermentation.celsius = float(matches[0])
-        else :
-            logger.log("/!\\ Caught weird looking patterns for fermentation temperature for beer {} when parsing mash temps data : {}".format(recipe.number, fermentation_data_list[0].text))
+            # Fermentation steps usually contain 2 elements
+            # But the fermentation "tips" fit in a single row
+            if len(flattened_row) > 1 :
+                # Handle fermentation steps as well
+                # Note that the protections below are there to protect against the infamous secret beer #89 which does not come with ingredients nor
+                # Mashing/Fermentation data
+                matches = DEGREES_PATTERN.findall(fermentation_data_list[0].text)
+                if len(matches) != 0 :
+                    method_timings.fermentation.celsius = float(matches[0])
+                else :
+                    logger.log("/!\\ Caught weird looking patterns for fermentation temperature for beer {} when parsing mash temps data : {}".format(recipe.number, fermentation_data_list[0].text))
 
-        matches = DEGREES_PATTERN.findall(fermentation_data_list[0].text)
-        if len(matches) != 0 :
-            method_timings.fermentation.fahrenheit = float(matches[0])
-        else :
-            logger.log("/!\\ Caught weird looking patterns for fermentation temperature for beer {} when parsing mash temps data : {}".format(recipe.number, fermentation_data_list[0].text))
+                matches = DEGREES_PATTERN.findall(fermentation_data_list[0].text)
+                if len(matches) != 0 :
+                    method_timings.fermentation.fahrenheit = float(matches[0])
+                else :
+                    logger.log("/!\\ Caught weird looking patterns for fermentation temperature for beer {} when parsing mash temps data : {}".format(recipe.number, fermentation_data_list[0].text))
+            else :
+                method_timings.fermentation.tips.append(flattened_row[0].text)
 
     # Parse twists, if any
     if twist_elem and len(twist_data_list) != 0:
@@ -798,24 +808,24 @@ def parse_method_timings_category(elements : list[TextElement], recipe : rcp.Rec
         twist_rows = split_blocks_based_on_y_distance(twist_data_list)
         for row in twist_rows :
             columns = group_in_distinct_columns(row)
-            flattened_column = concatenate_columns(columns)
-            flattened_column.sort(key=lambda x : x.x)
+            flattened_row = concatenate_columns(columns)
+            flattened_row.sort(key=lambda x : x.x)
 
             twist = rcp.Twist()
-            twist.name = flattened_column[0].text
+            twist.name = flattened_row[0].text
 
             # Some twists are decoupled with the amount (g) and Time columns
-            if len(flattened_column) == 3 :
-                matches = NUMERICS_PATTERN.findall(flattened_column[1].text)
+            if len(flattened_row) == 3 :
+                matches = NUMERICS_PATTERN.findall(flattened_row[1].text)
                 if len(matches) != 0 :
                     twist.amount = float(matches[0])
                 else :
                     twist.amount = math.nan
-                    logger.log("/!\\ Missing data for twist amount in beer {}. Parsed block was : {}".format(recipe.number, line_from_text_elements(flattened_column)))
+                    logger.log("/!\\ Missing data for twist amount in beer {}. Parsed block was : {}".format(recipe.number, line_from_text_elements(flattened_row)))
 
                 # Misformatting strikes again !
                 if recipe.number == 103 :
-                    twist.when = flattened_column[1].text
+                    twist.when = flattened_row[1].text
 
             method_timings.twists.append(twist)
 
@@ -994,10 +1004,10 @@ def parse_food_pairing_category(elements : list[TextElement], recipe : rcp.Recip
             continue
 
         raw_columns = group_in_distinct_columns(row)
-        flattened_columns = concatenate_columns(raw_columns)
-        flattened_columns.sort(key=lambda x : x.x)
+        flattened_rows = concatenate_columns(raw_columns)
+        flattened_rows.sort(key=lambda x : x.x)
 
-        for dataset in flattened_columns :
+        for dataset in flattened_rows :
             food_pairing.pairings.append(dataset.text)
 
     recipe.food_pairing = food_pairing
@@ -1006,8 +1016,6 @@ def parse_food_pairing_category(elements : list[TextElement], recipe : rcp.Recip
 def parse_brewers_tip_category(elements : list[TextElement], recipe : rcp.Recipe) -> rcp.Recipe :
     description = ""
 
-    if recipe.number == 406 :
-        pass
     # Pop the first element "BREWERS TIP", we don't want that in the description
     for elem in elements[1:] :
         description += elem.text + " "
