@@ -1194,9 +1194,16 @@ def extract_recipe(page : PageBlocks) -> rcp.Recipe :
 
 def main(args) :
     force_caching = False
-    if len(args) >= 1 :
-        logger.log("Force caching mode activated")
-        force_caching = args[0] == "true"
+    aggregate_results = False
+    if len(args) >= 2 :
+        force_caching = True if args[0] == "true" else False
+        aggregate_results = True if args[1] == "true" else False
+
+        if force_caching :
+            logger.log("Force caching mode activated")
+
+        if aggregate_results :
+            logger.log("json data will also be aggregated into a single file")
 
     cached_pages_dir = CACHE_DIRECTORY.joinpath("pages")
     cached_blocks_dir = CACHE_DIRECTORY.joinpath("blocks")
@@ -1328,6 +1335,15 @@ def main(args) :
         filepath = cached_extracted_recipes.joinpath(filename)
         with open(filepath, "w") as file :
             json.dump(recipe.to_json(), file, indent=4)
+
+    if aggregate_results :
+        json_data = []
+        for recipe in recipes_list :
+            json_data.append(recipe.to_json())
+        filepath = cached_extracted_recipes.joinpath("all_recipes.json")
+        with open(filepath, "w") as file :
+            json.dump({"recipes" : json_data}, file, indent=4)
+
 
     logger.log("Done !")
 
