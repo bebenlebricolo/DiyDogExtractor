@@ -13,6 +13,7 @@ from dataclasses import dataclass, field
 from copy import copy
 import traceback
 from typing import Optional
+import fitz
 
 import PyPDF2
 from PyPDF2 import PageObject, PdfWriter
@@ -181,27 +182,24 @@ def cache_pdf_contents(filepath : Path, page : PageObject) :
         raise Exception("Content is missing from page document")
 
 
-def cache_images(directory : Path, page : PageObject) :
-    if not directory.exists() :
-        directory.mkdir(parents=True)
+def cache_images(pdf_filepath : Path, outfile : Path) :
+    if not outfile.parent.exists():
+        outfile.parent.mkdir(parents=True)
 
     try :
-        for image in page.images:
-            image_name = Path(image.name).stem
-            image_path = directory.joinpath(image_name + ".png")
-            try :
-                decoded = Image.open(io.BytesIO(image.data)).convert(mode="RGBA")
-                decoded.save(image_path, format="PNG")
+        doc = fitz.Document(pdf_filepath)
+        page = doc.load_page(0)
+        pix = page.get_pixmap()
 
-            except Exception as e :
-                logger.log("Caught error while caching images for page {}".format(directory.name))
-                logger.log(e.__repr__())
-                continue
+        #convert to a PIL image
+        mode = "RGBA" if pix.alpha else "RGB"
+        img = Image.frombytes(mode, [pix.width, pix.height], pix.samples)
+        img.save(outfile, format="PNG")
 
-    # Sometimes we can't even list the images because of some weird errors ealier in the pdf parsing methods
     except Exception as e :
-        logger.log("Caught error while caching images for page {}".format(directory.name))
+        logger.log("Caught error while caching images for page {}".format(pdf_filepath.name))
         logger.log(e.__repr__())
+
 
 def list_pages(directory : Path, radical : str, extension : str = ".pdf") -> list[tuple[int, Path]] :
     pages_list : list[tuple[int, Path]] = []
@@ -1242,11 +1240,12 @@ def main(args) :
                 page = reader.pages[i]
 
                 logger.log("Caching page to disk ...")
-                cache_single_pdf_page(cached_pages_dir.joinpath(encoded_name + ".pdf"), page=page)
-                page_images_dir = cached_images_dir.joinpath(encoded_name)
+                page_pdf_path = cached_pages_dir.joinpath(encoded_name + ".pdf")
+                cache_single_pdf_page(page_pdf_path, page=page)
 
+                page_image_filepath = cached_images_dir.joinpath(encoded_name + ".png")
                 logger.log("Caching images to disk ...")
-                cache_images(page_images_dir, page)
+                cache_images(page_pdf_path, page_image_filepath)
                 content_filepath = cached_content_dir.joinpath(encoded_name + ".json")
 
 
