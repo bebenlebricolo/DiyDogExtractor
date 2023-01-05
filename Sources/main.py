@@ -15,7 +15,7 @@ import traceback
 from typing import Optional
 
 import PyPDF2
-from PyPDF2 import PageObject, PdfFileWriter
+from PyPDF2 import PageObject, PdfWriter
 
 from PIL import Image
 
@@ -162,7 +162,7 @@ def cache_single_pdf_page(filepath : Path, page : PageObject ) :
     if not filepath.parent.exists() :
         filepath.parent.mkdir(parents=True)
 
-    pdf_writer = PdfFileWriter()
+    pdf_writer = PdfWriter()
     pdf_writer.add_page(page)
     with open(filepath, "wb") as file :
         pdf_writer.write(file)
@@ -1228,7 +1228,7 @@ def main(args) :
     if force_caching :
         logger.log("Extracting all beer pages to {}".format(cached_pages_dir))
         with open(pdf_file, "rb") as file :
-            reader = PyPDF2.PdfFileReader(file)
+            reader = PyPDF2.PdfReader(file)
             # Page 22 is the first beer
             start_page = 21
 
@@ -1239,7 +1239,7 @@ def main(args) :
                 beer_index = i - start_page + 1
                 logger.log("Extracting page : {}, beer index : {}".format(i, beer_index))
                 encoded_name = "page_{}".format(beer_index)
-                page = reader.getPage(i)
+                page = reader.pages[i]
 
                 logger.log("Caching page to disk ...")
                 cache_single_pdf_page(cached_pages_dir.joinpath(encoded_name + ".pdf"), page=page)

@@ -288,13 +288,11 @@ class MethodTimings(Jsonable) :
                     new_twist.from_json(twist)
                     self.twists.append(new_twist)
 
-@dataclass
 class PackagingType(Enum) :
     Bottle = "Bottle"
     Keg = "Keg"
     Can = "Can"
 
-@dataclass
 class Packaging(Jsonable) :
     type : PackagingType = PackagingType.Bottle
 
