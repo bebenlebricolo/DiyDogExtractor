@@ -194,9 +194,9 @@ def extract_biggest_silhouette(source : Path, destination : Path, background_col
 
     # Force encode output as .png, in order to be sure file format supports transparency
     output_image_ml = destination.parent.joinpath(destination.stem + "_ML.png")
-    #_extract_image(img, contour, output_image, background_color, fit_crop_image)
-
     output_image = destination.parent.joinpath(destination.stem + ".png")
+    _extract_image(img, contour, output_image, background_color, fit_crop_image)
+
     boundaries = _find_boundaries_non_transparent(np.array(out_img))
 
     left = boundaries[2]
