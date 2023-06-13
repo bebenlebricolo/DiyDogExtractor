@@ -6,10 +6,14 @@ import numpy as np
 from pathlib import Path
 from fitz import Pixmap
 
+from matplotlib import pyplot as plt
+import colorsys
+
 from skimage import measure
 from skimage.draw import polygon
 
 from PIL import Image
+from .filesystem import ensure_folder_exist
 
 
 def _compute_perimeter(data : array) -> float:
@@ -96,9 +100,59 @@ def _extract_image(img : cv2.Mat, contour : np.ndarray, output_filepath : Path, 
 
     output_image.save(output_filepath)
 
-def _ensure_folder_exist(folder_path : Path) :
-    if not folder_path.exists():
-        folder_path.mkdir(parents=True)
+def remove_gray_background(img : cv2.Mat) -> cv2.Mat :
+    """Trying to get rid of the patterns with color extraction...
+    -> Does not work very well, extracted shape is even worse with this method !"""
+
+    # The idea here is to remove the greyish pattern that lies in the background of every pictures of
+    # DiyDog.. But color thresholding also takes a lot from the white parts of the images themselves, causing
+    # the contouring algorithm to progress into the bottle (...).
+    # At the end of the contouring process, all images have big holes in them, so this is not ready yet (and probably will never be)
+
+    bg_pattern_range = np.full(shape=(3), fill_value=30)
+    # Express in RGB color code
+    background_pattern_color = np.full(shape=(3), fill_value=195)
+    low_gray = background_pattern_color - bg_pattern_range
+    high_gray = background_pattern_color + bg_pattern_range
+
+    mask = cv2.inRange(img, low_gray, high_gray)
+    mask = cv2.bitwise_not(mask)
+    res = cv2.bitwise_and(img, img, mask=mask)
+
+    # Fill in the holes with white
+    res[mask==0] = (255,255,255)
+
+    row = 1
+    col = 5
+    fig = plt.figure(figsize=(col,row))
+    fig.add_subplot(row,col,1)
+    plt.imshow(res)
+    fig.add_subplot(row,col,2)
+    plt.imshow(mask)
+    fig.add_subplot(row,col,3)
+    plt.imshow(img)
+
+    # Do the same with the regular background color
+    background_plain_color = np.full(shape=(3), fill_value=240)
+    bg_pattern_range = np.full(shape=(3), fill_value=10)
+    low_gray = background_plain_color - bg_pattern_range
+    high_gray = background_plain_color + bg_pattern_range
+    mask = cv2.inRange(res, low_gray, high_gray)
+    mask = cv2.bitwise_not(mask)
+    res = cv2.bitwise_and(res, res, mask=mask)
+
+    # Fill in the holes with white
+    res[mask==0] = (255,255,255)
+
+    fig.add_subplot(row,col,4)
+    plt.imshow(res)
+    fig.add_subplot(row,col,5)
+    plt.imshow(mask)
+    plt.show()
+
+    another_gray = cv2.cvtColor(res, cv2.COLOR_RGB2GRAY)
+
+    return another_gray
 
 def extract_biggest_silhouette(source : Path, destination : Path, background_color = (0,0,0,0), fit_crop_image = True) -> tuple[float, float]:
     """Extracts the biggest contiguous/opaque element from a source image and produces a .png output image with transparency
@@ -113,7 +167,7 @@ def extract_biggest_silhouette(source : Path, destination : Path, background_col
     """
 
     output_folder = destination.parent
-    _ensure_folder_exist(output_folder)
+    ensure_folder_exist(output_folder)
 
     if not source.exists() :
         print("Could not find input image at pointed disk node : {}".format(source))
@@ -122,7 +176,6 @@ def extract_biggest_silhouette(source : Path, destination : Path, background_col
     img = cv2.imread(source.as_posix())
     gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
 
-    # Try with basic pixel thre
     [perimeter, aspect_ratio, contour] = _scikit_find_biggest_contour(gray)
     print("Extracted contour for image \"{}\" with perimeter : {} and aspect ratio : {}".format(source.name, perimeter, aspect_ratio))
 

@@ -1,15 +1,12 @@
 #!/usr/bin/python
 
-import io
 import os
 import re
 import sys
 import math
 import json
-import requests
 from pathlib import Path
 
-from dataclasses import dataclass, field
 from copy import copy
 import traceback
 from typing import Optional
@@ -18,15 +15,15 @@ from pypdf import PageObject, PdfFileWriter, PdfFileReader
 import fitz
 from fitz.utils import get_page_pixmap
 
-from PIL import Image
-
 # Local imports
 
 from .Utils.parsing import parse_line
 from .Utils.logger import Logger
-from .Models.jsonable import Jsonable
+from .Utils.downloader import download_pdf
+from .Models.blocks import PageBlocks, Coordinates, TextBlock, TextElement
 from .Models import recipe as rcp
 from .Utils import image as utim
+from .Utils.filesystem import ensure_folder_exist, list_pages
 
 C_DIYDOG_URL = "https://brewdogmedia.s3.eu-west-2.amazonaws.com/docs/2019+DIY+DOG+-+V8.pdf"
 
@@ -43,23 +40,6 @@ THIS_DIR = Path(__file__).parent
 CACHE_DIRECTORY = THIS_DIR.joinpath(".cache")
 logger = Logger(CACHE_DIRECTORY.joinpath("logs.txt"))
 
-def download_pdf(url : str, output_file : Path) -> None:
-    response = requests.get(url)
-    match(response.status_code) :
-        case 200 :
-            pass
-        case _ :
-            logger.log("Could not download pdf file, error code was : {}".format(response.status_code))
-            return
-
-    # Create output directory if it does not exist yet
-    if not output_file.parent.exists() :
-        output_file.parent.mkdir(parents=True)
-
-    # Dump pdf to file
-    with open(output_file, "wb") as file :
-        file.write(response.content)
-
 def celsius_to_fahrenheit(value : float) -> float :
     return (value* 1.8) + 32
 
@@ -67,85 +47,6 @@ def fahrenheit_to_celsius(value : float) -> float :
     return (value - 32)/1.8
 
 # Useful doc : https://pypdf2.readthedocs.io/en/latest/user/extract-text.html
-
-
-@dataclass
-class Coordinates(Jsonable) :
-    x : float = 0.0
-    y : float = 0.0
-
-    def to_json(self) -> dict:
-        return {
-            "x" : self.x,
-            "y" : self.y
-        }
-
-    def from_json(self, content) -> None:
-        self.x = self._read_prop("x", content, 0.0)
-        self.y = self._read_prop("y", content, 0.0)
-
-@dataclass
-class TextBlock(Coordinates) :
-    text : str = ""
-    transformation_matrix = None
-    current_matrix = None
-
-    def to_json(self) -> dict :
-        parent_dict = super().to_json()
-        parent_dict.update({
-            "text" : self.text,
-            "tm" : self.transformation_matrix,
-            "cm" : self.current_matrix,
-            }
-        )
-        return parent_dict
-
-    def from_json(self, content : dict) -> None :
-        super().from_json(content)
-        self.text = self._read_prop("text", content, "")
-        self.transformation_matrix = self._read_prop("tm", content, [0,0,0,0,0,0])
-        self.current_matrix = self._read_prop("cm", content, [0,0,0,0,0,0])
-
-@dataclass
-class TextElement(Coordinates) :
-    text : str = ""
-
-    def to_json(self) -> dict:
-        parent_dict = super().to_json()
-        parent_dict.update({
-            "text" : self.text
-        })
-        return parent_dict
-
-    def from_json(self, content) -> None:
-        super().from_json(content)
-        self.text = self._read_prop("text", content, "")
-
-@dataclass
-class PageBlocks(Jsonable) :
-    elements : list[TextElement] = field(default_factory=list)
-    index : int = 0
-
-    def reset(self) :
-        self.__init__()
-
-    def to_json(self) -> dict:
-        elements_list = []
-        for block  in self.elements :
-            elements_list.append(block.to_json())
-        return {
-            "index" : self.index,
-            "elements" : elements_list
-        }
-
-    def from_json(self, content) -> None:
-        self.elements.clear()
-        self.index = self._read_prop("index", content, 0)
-        if "elements" in content :
-            for block in content["elements"] :
-                new_block = TextElement()
-                new_block.from_json(block)
-                self.elements.append(new_block)
 
 
 def cache_raw_blocks(filepath : Path, blocks : list[list[str]] ) :
@@ -188,26 +89,6 @@ def cache_images(directory : Path, page_file : Path) :
 
     try :
         document = fitz.Document(page_file) # type: ignore
-        counter = 0
-        # for image in document.get_page_images(0):
-        #     xref = image[0]
-        #     img = document.extract_image(xref)
-        #     data = img["image"]
-        #     extension = img["ext"]
-        #     cs_name = img["cs-name"]
-
-        #     image_name = "Img_{}.{}".format(counter, extension)
-        #     image_path = directory.joinpath(image_name)
-        #     try :
-        #         decoded = Image.open(io.BytesIO(data)).convert(mode="RGBA")
-        #         decoded.save(image_path, format="PNG")
-        #         counter += 1
-
-        #     except Exception as e :
-        #         logger.log("Caught error while caching images for page {}".format(directory.name))
-        #         logger.log(e.__repr__())
-        #         continue
-
 
         full_page_rendered = get_page_pixmap(document, 0)
         full_page_rendered.pil_save(directory.joinpath("full.png"))
@@ -228,18 +109,6 @@ def cache_images(directory : Path, page_file : Path) :
     except Exception as e :
         logger.log("Caught error while caching images for page {}".format(directory.name))
         logger.log(e.__repr__())
-
-def list_pages(directory : Path, radical : str, extension : str = ".pdf") -> list[tuple[int, Path]] :
-    pages_list : list[tuple[int, Path]] = []
-    for (dirpath, _, filenames) in os.walk(directory) :
-        for file in filenames :
-            if file.endswith(extension) :
-                filepath = Path(dirpath).joinpath(file)
-                index = int(file.lstrip(radical).rstrip(extension))
-                pages_list.append((index, filepath))
-    # Sort by indices
-    pages_list.sort(key=lambda x : x[0])
-    return pages_list
 
 
 def extract_raw_text_blocks_from_content(contents : str) -> list[list[str]] :
@@ -1243,7 +1112,7 @@ def main(args) :
     pdf_file = CACHE_DIRECTORY.joinpath("diydog-2022.pdf")
     if not pdf_file.exists() :
         logger.log("Downloading brewdog's Diydog pdf booklet ...")
-        download_pdf(C_DIYDOG_URL, pdf_file)
+        download_pdf(C_DIYDOG_URL, pdf_file, logger)
         logger.log("-> OK : Downloading succeeded ! Pdf file was downloaded at : {}".format(pdf_file))
         # Triggers force caching because we need to regenerate everything
         force_caching = True
