@@ -7,7 +7,6 @@ from pathlib import Path
 from fitz import Pixmap
 
 from matplotlib import pyplot as plt
-import colorsys
 
 from skimage import measure
 from skimage.draw import polygon
@@ -34,6 +33,14 @@ def _find_min_max(value : float, boundaries : list[float]) -> list[float] :
     if value > boundaries[1] :
         boundaries[1] = value
     return boundaries
+
+
+# Copied from https://stackoverflow.com/a/31402351
+def _find_boundaries_non_transparent(data : np.ndarray) -> list[int] :
+    a = np.where(data != 0)
+    bbox = np.min(a[0]), np.max(a[0]), np.min(a[1]), np.max(a[1])
+    out = [int(round(x)) for x in bbox]
+    return out
 
 def _compute_bounding_box(contour : np.ndarray) -> tuple[list[float], list[float]] :
     x_boundaries = [sys.float_info.max, 0.0]
@@ -176,12 +183,28 @@ def extract_biggest_silhouette(source : Path, destination : Path, background_col
     img = cv2.imread(source.as_posix())
     gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
 
+    import rembg
+    out_img = Image.fromarray(rembg.remove(img)) # type: ignore
+    #plt.imshow(out_img)
+    #plt.show()
+
     [perimeter, aspect_ratio, contour] = _scikit_find_biggest_contour(gray)
+    #[perimeter, aspect_ratio, contour] = _scikit_find_biggest_contour(another_gray)
     print("Extracted contour for image \"{}\" with perimeter : {} and aspect ratio : {}".format(source.name, perimeter, aspect_ratio))
 
     # Force encode output as .png, in order to be sure file format supports transparency
+    output_image_ml = destination.parent.joinpath(destination.stem + "_ML.png")
+    #_extract_image(img, contour, output_image, background_color, fit_crop_image)
+
     output_image = destination.parent.joinpath(destination.stem + ".png")
-    _extract_image(img, contour, output_image, background_color, fit_crop_image)
+    boundaries = _find_boundaries_non_transparent(np.array(out_img))
+
+    left = boundaries[2]
+    right = boundaries[3]
+    top = boundaries[0]
+    bottom = boundaries[1]
+    out_img_cropped = out_img.crop((left, top, right, bottom))
+    out_img_cropped.save(output_image_ml)
 
     return (perimeter, aspect_ratio)
 
