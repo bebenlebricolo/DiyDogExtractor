@@ -288,7 +288,6 @@ class MethodTimings(Jsonable) :
                     new_twist.from_json(twist)
                     self.twists.append(new_twist)
 
-@dataclass
 class PackagingType(Enum) :
     Bottle = "Bottle"
     Keg = "Keg"
@@ -296,6 +295,8 @@ class PackagingType(Enum) :
 
 @dataclass
 class Packaging(Jsonable) :
+    # Enums are not considered as mutable dataclasses, so plain initialization like this one works out of the box
+    # Otherwise we can't get this to work with regular @dataclass and field(default_factory=...) for `PackagingType` object.
     type : PackagingType = PackagingType.Bottle
 
 @dataclass
