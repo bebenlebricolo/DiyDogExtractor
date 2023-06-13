@@ -14,8 +14,7 @@ from copy import copy
 import traceback
 from typing import Optional
 
-import PyPDF2
-from PyPDF2 import PageObject, PdfFileWriter
+from pypdf import PageObject, PdfFileWriter, PdfFileReader
 
 from PIL import Image
 
@@ -25,6 +24,7 @@ from .Utils.parsing import parse_line
 from .Utils.logger import Logger
 from .Models.jsonable import Jsonable
 from .Models import recipe as rcp
+from .Utils.image import extract_biggest_silhouette
 
 
 C_DIYDOG_URL = "https://brewdogmedia.s3.eu-west-2.amazonaws.com/docs/2019+DIY+DOG+-+V8.pdf"
@@ -1228,7 +1228,7 @@ def main(args) :
     if force_caching :
         logger.log("Extracting all beer pages to {}".format(cached_pages_dir))
         with open(pdf_file, "rb") as file :
-            reader = PyPDF2.PdfFileReader(file)
+            reader = PdfFileReader(file)
             # Page 22 is the first beer
             start_page = 21
 
