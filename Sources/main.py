@@ -15,6 +15,8 @@ import traceback
 from typing import Optional
 
 from pypdf import PageObject, PdfFileWriter, PdfFileReader
+import fitz
+from fitz.utils import get_page_pixmap
 
 from PIL import Image
 
@@ -24,8 +26,7 @@ from .Utils.parsing import parse_line
 from .Utils.logger import Logger
 from .Models.jsonable import Jsonable
 from .Models import recipe as rcp
-from .Utils.image import extract_biggest_silhouette
-
+from .Utils import image as utim
 
 C_DIYDOG_URL = "https://brewdogmedia.s3.eu-west-2.amazonaws.com/docs/2019+DIY+DOG+-+V8.pdf"
 
@@ -181,22 +182,47 @@ def cache_pdf_contents(filepath : Path, page : PageObject) :
         raise Exception("Content is missing from page document")
 
 
-def cache_images(directory : Path, page : PageObject) :
+def cache_images(directory : Path, page_file : Path) :
     if not directory.exists() :
         directory.mkdir(parents=True)
 
     try :
-        for image in page.images:
-            image_name = Path(image.name).stem
-            image_path = directory.joinpath(image_name + ".png")
-            try :
-                decoded = Image.open(io.BytesIO(image.data)).convert(mode="RGBA")
-                decoded.save(image_path, format="PNG")
+        document = fitz.Document(page_file) # type: ignore
+        counter = 0
+        # for image in document.get_page_images(0):
+        #     xref = image[0]
+        #     img = document.extract_image(xref)
+        #     data = img["image"]
+        #     extension = img["ext"]
+        #     cs_name = img["cs-name"]
 
-            except Exception as e :
-                logger.log("Caught error while caching images for page {}".format(directory.name))
-                logger.log(e.__repr__())
-                continue
+        #     image_name = "Img_{}.{}".format(counter, extension)
+        #     image_path = directory.joinpath(image_name)
+        #     try :
+        #         decoded = Image.open(io.BytesIO(data)).convert(mode="RGBA")
+        #         decoded.save(image_path, format="PNG")
+        #         counter += 1
+
+        #     except Exception as e :
+        #         logger.log("Caught error while caching images for page {}".format(directory.name))
+        #         logger.log(e.__repr__())
+        #         continue
+
+
+        full_page_rendered = get_page_pixmap(document, 0)
+        full_page_rendered.pil_save(directory.joinpath("full.png"))
+
+        # Cropping area : left, right, top, bottom
+        #                  x0    x1     y0    y1
+        cropping_zone = [0.64, 0.89, 0.26, 0.69]
+        cropped_image = utim.extract_zone_from_image(full_page_rendered, cropping_zone )
+
+        cropped_image_path = directory.joinpath("cropped.png")
+        cropped_image.save(cropped_image_path)
+
+        extracted_shape = directory.joinpath("extracted_silhouette.png")
+        (perimeter, aspect_ratio) = utim.extract_biggest_silhouette(cropped_image_path, extracted_shape, True)
+        logger.log("Extracted image with perimeter : {} and aspect ratio : {}".format(perimeter, aspect_ratio))
 
     # Sometimes we can't even list the images because of some weird errors ealier in the pdf parsing methods
     except Exception as e :
@@ -1243,12 +1269,7 @@ def main(args) :
 
                 logger.log("Caching page to disk ...")
                 cache_single_pdf_page(cached_pages_dir.joinpath(encoded_name + ".pdf"), page=page)
-                page_images_dir = cached_images_dir.joinpath(encoded_name)
-
-                logger.log("Caching images to disk ...")
-                cache_images(page_images_dir, page)
                 content_filepath = cached_content_dir.joinpath(encoded_name + ".json")
-
 
                 # Fetch raw contents and manually parse it (works better than brute text extraction from pypdf2)
                 logger.log("Extracting textual content of page ...")
@@ -1285,14 +1306,24 @@ def main(args) :
                 pages_content.append(page_blocks)
                 cache_contents(content_filepath, page_blocks)
 
-
-
         logger.log("-> OK : Pages extracted successfully in {}".format(cached_pages_dir))
+
 
     # List already cached pages
     logger.log("Listing available pdf pages ...")
     pages_list = list_pages(cached_pages_dir, "page_", ".pdf")
     logger.log("-> OK : Found {} pages in {}".format(len(pages_list), cached_pages_dir))
+
+
+
+    # Extracting pdf rendered images !
+    logger.log("Caching images to disk ...")
+    for page in pages_list :
+        page_images_dir = cached_images_dir.joinpath(page[1].stem)
+        logger.log("Caching images for page {}".format(page[1].stem))
+        cache_images(page_images_dir, page[1])
+
+
 
     logger.log("Listing available json content from pages ...")
     pages_content_list = list_pages(cached_content_dir, "page_", ".json")
