@@ -302,11 +302,12 @@ class Packaging(Jsonable) :
 @dataclass
 class Recipe(Jsonable) :
     name : str = ""                                 # Beer title
-    subtitle : str = ""                             # Beer title
+    subtitle : str = ""                             # Beer subtitle, contains tags and other information
     number : int = 0                                # Refers to the "#1" tag
     page_number : int = 0                           # page number as parsed from pdf page
     tags : list[str] = field(default_factory=list)  # tag line
     first_brewed : str = ""                         # Date of first brew
+
     # ibu -> Ibus are stored within the "Basics" object, despite not 100% matching the recipe it makes sense to have it there instead
     image : str = "" # Ref to file with image
     original_pdf_page : str = "" # Ref to original pdf page extracted from DiyDog book
@@ -317,6 +318,8 @@ class Recipe(Jsonable) :
     method_timings : MethodTimings = field(default_factory=MethodTimings)
     packaging : Packaging = field(default_factory=Packaging)
 
+    # Some beers have parsing errors along the way, so list some potential issues here and let the end user check the pdf instead
+    parsing_errors : Optional[list[str]] = None
     # Some beers don't have food pairing associated (happens for beer #79 and #156)
     food_pairing : Optional[FoodPairing] = None
 
@@ -336,7 +339,8 @@ class Recipe(Jsonable) :
             "ingredients" : self.ingredients.to_json(),
             "brewersTip" : self.brewers_tip.to_json(),
             "methodTimings" : self.method_timings.to_json(),
-            "packaging" : self.packaging.to_json()
+            "packaging" : self.packaging.to_json(),
+            "parsingErrors" : self.parsing_errors
         }
 
     def from_json(self, content: dict) -> None:
@@ -367,3 +371,12 @@ class Recipe(Jsonable) :
             self.method_timings.from_json(content["methodTimings"])
         if "packaging" in content :
             self.packaging.from_json(content["packaging"])
+        if "parsingErrors" in content:
+            self.parsing_errors = []
+            for elem in content["parsingErrors"] :
+                self.parsing_errors.append(elem)
+
+    def add_parsing_error(self, error_string : str) :
+        if not self.parsing_errors :
+            self.parsing_errors = []
+        self.parsing_errors.append(error_string)

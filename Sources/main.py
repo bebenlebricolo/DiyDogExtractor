@@ -7,6 +7,8 @@ import math
 import json
 from pathlib import Path
 import argparse
+from enum import Enum
+
 
 from copy import copy
 import traceback
@@ -821,6 +823,12 @@ def pre_process_malts(elements : list[TextElement]) -> list[TextElement] :
 
     return out
 
+
+class HopParsingErrors(Enum):
+    ERROR_INCORRECT_AMOUNT="Error, incorrect amount",
+    ERROR_OK = "No error"
+
+
 def parse_ingredients_category(elements : list[TextElement], recipe : rcp.Recipe) -> rcp.Recipe :
     malt_elem = find_element(elements, "MALT")
     hops_elem = find_element(elements, "HOPS")
@@ -900,6 +908,7 @@ def parse_ingredients_category(elements : list[TextElement], recipe : rcp.Recipe
         threshold = 1.8
 
     hops_rows = split_blocks_based_on_y_distance(hops_data_list[3:], threshold = threshold)
+    hops_parsing_error = HopParsingErrors.ERROR_OK
     for row in hops_rows :
         columns = group_in_distinct_columns(row, 0.005)
         dataset = concatenate_columns(columns)
@@ -923,10 +932,13 @@ def parse_ingredients_category(elements : list[TextElement], recipe : rcp.Recipe
             amount = float(match.groups()[0])
         else:
             logger.log("/!\\ Could not extract amount from beer {}. Original text was : {}".format(recipe.number, dataset[columns_count - 2].text))
+            hops_parsing_error = HopParsingErrors.ERROR_INCORRECT_AMOUNT
         name = dataset[0].text
 
         new_hop = rcp.Hop(name=name, amount=amount, when=when, attribute=attribute)
         recipe.ingredients.hops.append(new_hop)
+        if hops_parsing_error != HopParsingErrors.ERROR_OK:
+            recipe.add_parsing_error("Had some issues when reading hop : guessed name : {} . Reason : '{}'. Use the pdf page for reference !".format(name, hops_parsing_error.value))
 
 
     # Parse yeast
