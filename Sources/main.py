@@ -6,6 +6,7 @@ import sys
 import math
 import json
 from pathlib import Path
+import argparse
 
 from copy import copy
 import traceback
@@ -261,6 +262,7 @@ def extract_header(elements : list[TextElement], recipe : rcp.Recipe) -> rcp.Rec
 
     # The beer's name is always the closest item to the beer's number, in the formatting
     name_elem = find_closest_element(elements, number_element)
+
     if recipe.number == 15 :
         pass
     recipe.name = name_elem.text
@@ -1098,18 +1100,25 @@ def extract_recipe(page : PageBlocks) -> rcp.Recipe :
 
 
 def main(args) :
+    arg_parser = argparse.ArgumentParser("Python DiyDogExtractor tool. This software downloads the published DiyDog pdf book and tries to reconstruct a complete database out of it/")
+    arg_parser.add_argument("force_caching", default="false", help="Force the tool to regenerate its cache from scratch. Downloads only if .pdf file is not there")
+    arg_parser.add_argument("skip_image_extraction", default="false", help="Skips the image extraction step, as it takes quite a long time to achieve")
+    arg_parser.add_argument("aggregate_results", default="false", help="Aggregates single recipes in a single big recipe collection")
+    commands = arg_parser.parse_args(args)
 
-    force_caching = False
-    aggregate_results = False
-    if len(args) >= 2 :
-        force_caching = True if args[0] == "true" else False
-        aggregate_results = True if args[1] == "true" else False
+    force_caching = commands.force_caching == "true"
+    aggregate_results = commands.aggregate_results == "true"
+    skip_image_extraction = commands.skip_image_extraction == "true"
 
-        if force_caching :
-            logger.log("Force caching mode activated")
 
-        if aggregate_results :
-            logger.log("json data will also be aggregated into a single file")
+    if force_caching :
+        logger.log("Force caching mode activated")
+
+    if skip_image_extraction :
+        logger.log("Image extraction step skipping activated")
+
+    if aggregate_results :
+        logger.log("json data will also be aggregated into a single file")
 
     cached_pages_dir = CACHE_DIRECTORY.joinpath("pages")
     cached_blocks_dir = CACHE_DIRECTORY.joinpath("blocks")
@@ -1217,7 +1226,7 @@ def main(args) :
     images_list = list_files(cached_images_dir, "extracted_silhouette", ".png")
 
     # Extracting pdf rendered images !
-    if len(images_list) < 100 :
+    if skip_image_extraction == False and len(images_list) < 100 :
         logger.log("Found few {} pages images in {}. Triggering image extraction again.".format(len(images_list), cached_pages_dir))
         logger.log("Caching images to disk ...")
         for page in pages_list :
@@ -1226,6 +1235,7 @@ def main(args) :
             cache_images(page_images_dir, page[1])
     else :
         logger.log("-> OK : Found {} pages images in {}".format(len(images_list), cached_pages_dir))
+        logger.log("Image extraction step skipped.")
 
     # List already cached images
     logger.log("Listing available pages images and extracted images...")

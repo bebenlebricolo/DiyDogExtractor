@@ -27,8 +27,6 @@ def extract_groups(line : str) -> list[str] :
 
     return groups
 
-
-
 # Extract content from a single line of text
 def parse_line(line : str) -> str :
     # We need to take out the unicode escapes if it happens to have some
