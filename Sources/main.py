@@ -263,9 +263,26 @@ def extract_header(elements : list[TextElement], recipe : rcp.Recipe) -> rcp.Rec
     # The beer's name is always the closest item to the beer's number, in the formatting
     name_elem = find_closest_element(elements, number_element)
 
-    if recipe.number == 15 :
+    if recipe.number == 15:
         pass
+
+    # For some beers, name components are split (because of a special character that needed dedicated pdf drawing instructions (...))
+    name_comps_aligned = [x for x in elements if x.y == name_elem.y]
+    name_comps_aligned.sort(key=lambda x : x.x)
+
     recipe.name = name_elem.text
+
+    # Special handling for close words
+    if len(name_comps_aligned) > 1 :
+        threshold_distance = 20
+        for i in range(1, len(name_comps_aligned)):
+            if name_comps_aligned[i].x - name_comps_aligned[i-1].x >= threshold_distance:
+                # This section seems to represent subtitles for beers, like characteristics, etc...
+                recipe.subtitle += name_comps_aligned[i].text + " "
+            else :
+                recipe.name += name_comps_aligned[i].text
+    recipe.name.rstrip(" ")
+    recipe.subtitle.rstrip(" ")
 
     # We need to keep track of the consumed element so that they don't fall into the tag lines
     consumed_elements.append(number_element)
@@ -1107,8 +1124,8 @@ def main(args) :
     commands = arg_parser.parse_args(args)
 
     force_caching = commands.force_caching == "true"
-    aggregate_results = commands.aggregate_results == "true"
     skip_image_extraction = commands.skip_image_extraction == "true"
+    aggregate_results = commands.aggregate_results == "true"
 
 
     if force_caching :
@@ -1285,6 +1302,7 @@ def main(args) :
             json.dump(recipe.to_json(), file, indent=4)
 
     if aggregate_results :
+        logger.log("Dumping aggregated recipe json book as 'all_recipes.json'.")
         json_data = []
         for recipe in recipes_list :
             json_data.append(recipe.to_json())

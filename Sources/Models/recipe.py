@@ -302,6 +302,7 @@ class Packaging(Jsonable) :
 @dataclass
 class Recipe(Jsonable) :
     name : str = ""                                 # Beer title
+    subtitle : str = ""                             # Beer title
     number : int = 0                                # Refers to the "#1" tag
     page_number : int = 0                           # page number as parsed from pdf page
     tags : list[str] = field(default_factory=list)  # tag line
@@ -322,6 +323,7 @@ class Recipe(Jsonable) :
     def to_json(self) -> dict:
         return {
             "name" : self.name,
+            "subtitle" : self.subtitle,
             "number" : self.number,
             "pageNumber" : self.page_number,
             "tags" : self.tags,
@@ -339,6 +341,7 @@ class Recipe(Jsonable) :
 
     def from_json(self, content: dict) -> None:
         self.name = self._read_prop("name", content, "")
+        self.subtitle = self._read_prop("subtitle", content, "")
         self.number = self._read_prop("number", content, 0)
         self.page_number = self._read_prop("pageNumber", content, 0)
         self.tags = []
