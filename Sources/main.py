@@ -23,7 +23,7 @@ from .Utils.downloader import download_pdf
 from .Models.blocks import PageBlocks, Coordinates, TextBlock, TextElement
 from .Models import recipe as rcp
 from .Utils import image as utim
-from .Utils.filesystem import ensure_folder_exist, list_pages
+from .Utils.filesystem import ensure_folder_exist, list_pages, list_files
 
 C_DIYDOG_URL = "https://brewdogmedia.s3.eu-west-2.amazonaws.com/docs/2019+DIY+DOG+-+V8.pdf"
 
@@ -40,6 +40,13 @@ THIS_DIR = Path(__file__).parent
 CACHE_DIRECTORY = THIS_DIR.joinpath(".cache")
 logger = Logger(CACHE_DIRECTORY.joinpath("logs.txt"))
 
+
+def custom_assert_equal(val1, val2) :
+    if val1 != val2 :
+        print("Caught 2 different values, but they should be equal")
+        raise Exception("val1 = {}, val2 = {}".format(val1, val2))
+
+
 def celsius_to_fahrenheit(value : float) -> float :
     return (value* 1.8) + 32
 
@@ -53,11 +60,12 @@ def cache_raw_blocks(filepath : Path, blocks : list[list[str]] ) :
     if not filepath.parent.exists() :
         filepath.parent.mkdir(parents=True)
 
-    with open(filepath, "w") as file :
+    with open(filepath, "wb") as file :
         for block in blocks :
             for line in block :
-                file.write(line + "\n")
-            file.write("\n")
+                data = (line + "\n").encode("utf-8")
+                file.write(data)
+            file.write("\n".encode("utf-8"))
 
 
 def cache_single_pdf_page(filepath : Path, page : PageObject ) :
@@ -189,8 +197,8 @@ def cache_contents(filepath : Path, page : PageBlocks) :
         filepath.parent.mkdir(parents=True)
 
     with open(filepath, "w") as file :
-        data = page.to_json()
-        json.dump(data, file, indent=4)
+        content = page.to_json()
+        json.dump(content, file, indent=4)
 
 def cache_pdf_raw_contents(filepath : Path, content : str) :
     if not filepath.parent.exists() :
@@ -253,6 +261,8 @@ def extract_header(elements : list[TextElement], recipe : rcp.Recipe) -> rcp.Rec
 
     # The beer's name is always the closest item to the beer's number, in the formatting
     name_elem = find_closest_element(elements, number_element)
+    if recipe.number == 15 :
+        pass
     recipe.name = name_elem.text
 
     # We need to keep track of the consumed element so that they don't fall into the tag lines
@@ -860,10 +870,10 @@ def parse_ingredients_category(elements : list[TextElement], recipe : rcp.Recipe
 
     # Parse hops
     hops_data_list.sort(key=lambda x : x.y, reverse=True)
-    assert(hops_data_list[0].text == "(g)")
+    assert("(g" in hops_data_list[0].text)
 
     # The beer #68 encodes the "Add" as "min" so we need to handle that case as well
-    assert(hops_data_list[1].text == "Add" or hops_data_list[1].text == "(min)")
+    assert(hops_data_list[1].text == "Add" or "(min" in hops_data_list[1].text)
     assert(hops_data_list[2].text == "Attribute")
 
     threshold = 1.5
@@ -1088,6 +1098,7 @@ def extract_recipe(page : PageBlocks) -> rcp.Recipe :
 
 
 def main(args) :
+
     force_caching = False
     aggregate_results = False
     if len(args) >= 2 :
@@ -1130,6 +1141,7 @@ def main(args) :
         logger.log("Extracting all beer pages to {}".format(cached_pages_dir))
         with open(pdf_file, "rb") as file :
             reader = PdfReader(file)
+
             # Page 22 is the first beer
             start_page = 21
 
@@ -1150,15 +1162,19 @@ def main(args) :
                 # Fetch raw contents and manually parse it (works better than brute text extraction from pypdf)
                 logger.log("Extracting textual content of page ...")
                 raw_contents = page.get_contents()
+
                 if raw_contents == None :
                     raise Exception("Cannot read page !")
                 data = bytes(raw_contents.get_data())
+
+                str_contents : str
                 try :
-                    str_contents = data.decode("utf-8")
+                    # File is written with the iso-8859-1 encoding and does not play well with the rest of the parsing
+                    str_contents = data.decode("iso-8859-1")
                 except Exception as ex :
                     logger.log("/!\\ Caught exception while parsing")
                     logger.log("   Exception was : {}".format(ex))
-                    str_contents = data.decode("latin-1")
+                    continue
                 cache_pdf_raw_contents(cached_pdf_raw_content.joinpath(encoded_name + ".txt"), str_contents )
 
                 raw_blocks = extract_raw_text_blocks_from_content(str_contents)
@@ -1196,16 +1212,25 @@ def main(args) :
     pages_list = list_pages(cached_pages_dir, "page_", ".pdf")
     logger.log("-> OK : Found {} pages in {}".format(len(pages_list), cached_pages_dir))
 
-
+    # List already cached images
+    logger.log("Listing available pages images and extracted images...")
+    images_list = list_files(cached_images_dir, "extracted_silhouette", ".png")
 
     # Extracting pdf rendered images !
-    logger.log("Caching images to disk ...")
-    for page in pages_list :
-        page_images_dir = cached_images_dir.joinpath(page[1].stem)
-        logger.log("Caching images for page {}".format(page[1].stem))
-        cache_images(page_images_dir, page[1])
+    if len(images_list) < 100 :
+        logger.log("Found few {} pages images in {}. Triggering image extraction again.".format(len(images_list), cached_pages_dir))
+        logger.log("Caching images to disk ...")
+        for page in pages_list :
+            page_images_dir = cached_images_dir.joinpath(page[1].stem)
+            logger.log("Caching images for page {}".format(page[1].stem))
+            cache_images(page_images_dir, page[1])
+    else :
+        logger.log("-> OK : Found {} pages images in {}".format(len(images_list), cached_pages_dir))
 
-
+    # List already cached images
+    logger.log("Listing available pages images and extracted images...")
+    images_list = list_files(cached_images_dir, "extracted_silhouette", ".png")
+    logger.log("-> OK : Found {} pages images in {}".format(len(images_list), cached_pages_dir))
 
     logger.log("Listing available json content from pages ...")
     pages_content_list = list_pages(cached_content_dir, "page_", ".json")

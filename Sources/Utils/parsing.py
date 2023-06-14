@@ -32,7 +32,8 @@ def extract_groups(line : str) -> list[str] :
 # Extract content from a single line of text
 def parse_line(line : str) -> str :
     # We need to take out the unicode escapes if it happens to have some
-    decoded_line = line.encode().decode("unicode-escape")
+    #decoded_line = line.encode().decode("unicode-escape")
+    decoded_line = line
     tj_index = decoded_line.find("Tj")
     if tj_index == -1 :
         tj_index = decoded_line.find("TJ")
@@ -68,8 +69,13 @@ def escape_content(line : str) -> str :
         # Decode octal
         if line[index + 1].isnumeric() :
             octal_str = line[index + 1 : index + 4]
+            character = chr(int(octal_str, 8))
+            escaped_version += character
+            start = index + 4
+            index = line.find("\\", start, end)
+            continue
 
-
+        # Regular case
         escaped_version += line[index + 1]
         start = index + 2
         index = line.find("\\", start, end)
