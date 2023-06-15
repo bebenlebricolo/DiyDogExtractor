@@ -1256,11 +1256,20 @@ def main(args) :
     images_list = list_files(cached_images_dir, "extracted_silhouette", ".png")
 
     # Extracting pdf rendered images !
-    if skip_image_extraction == False and len(images_list) < 500 :
+    if skip_image_extraction == False and len(images_list) < 100 :
         logger.log("Found few {} pages images in {}. Triggering image extraction again.".format(len(images_list), cached_pages_dir))
         logger.log("Caching images to disk ...")
 
+        # DEBUG : used to only feed those pages to the image extraction process
+        # Comment out to extract every page on regular list
+        #candidates = [1, 8, 11, 16, 63, 172]
+
         for page in pages_list :
+
+            # DEBUG : skip images that are not in this list (used to determine aspect ratios for known images)
+            #if page[0] not in candidates :
+            #    continue
+
             page_images_dir = cached_images_dir.joinpath(page[1].stem)
             logger.log("Caching images for page {}".format(page[1].stem))
             cache_images(page_images_dir, page[1], page[0])

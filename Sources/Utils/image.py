@@ -20,7 +20,7 @@ from .filesystem import ensure_folder_exist
 from ..Models.recipe import PackagingType
 from .logger import Logger
 
-packaging_type_lookup = [
+packaging_type_lookup_ml = [
     # Packaging type           # avg aspect ratio
     [PackagingType.Bottle,      0.27    ],
     [PackagingType.BigBottle,   0.28    ],
@@ -29,6 +29,14 @@ packaging_type_lookup = [
     [PackagingType.Barrel,      0.74    ],
 ]
 
+packaging_type_lookup_contouring = [
+    # Packaging type           # avg aspect ratio
+    [PackagingType.Bottle,      0.26    ],
+    [PackagingType.BigBottle,   0.29    ],
+    [PackagingType.Can,         0.59    ],
+    [PackagingType.Keg,         0.61    ],
+    [PackagingType.Barrel,      0.74    ],
+]
 
 def _compute_perimeter(data : array) -> float:
     perimeter = 0.0
@@ -176,11 +184,11 @@ def remove_gray_background(img : cv2.Mat) -> cv2.Mat :
 
     return another_gray
 
-def _find_closest_packaging_type(aspect_ratio : float) -> PackagingType :
+def _find_closest_packaging_type(aspect_ratio : float, lookup_source : list[list]) -> PackagingType :
     """Finds the most probable packaging type out of them all"""
     min_distance = 100
-    most_probable_pack = packaging_type_lookup[0]
-    for pack in packaging_type_lookup :
+    most_probable_pack = lookup_source [0]
+    for pack in lookup_source  :
         distance = abs(aspect_ratio - pack[1])
         if distance < min_distance :
             min_distance = distance
@@ -205,7 +213,7 @@ def _extract_silhouette_with_ml(img : cv2.Mat) -> tuple[float, np.ndarray] :
     right = boundaries[3]
     top = boundaries[0]
     bottom = boundaries[1]
-    out_img_cropped = np.array(out_img.crop((left, top, right, bottom)))
+    out_img_cropped = cv2.cvtColor(np.array(out_img.crop((left, top, right, bottom))), cv2.COLOR_RGBA2BGRA)
     aspect_ratio = abs(right - left) / abs(bottom - top)
 
     return (aspect_ratio, out_img_cropped)
@@ -254,19 +262,44 @@ def extract_biggest_silhouette(source : Path, destination : Path, logger : Logge
     aspect_ratio = 0.0
 
     output_image_filepath = destination.parent.joinpath(destination.stem + ".png")
-    # Trying with ML first
-    (aspect_ratio, output_image) = _extract_silhouette_with_ml(img)
+    # Trying with contouring first
 
+    (aspect_ratio, output_image) = _extract_silhouette_with_ml(img)
     rounded_ar = round(aspect_ratio, 2)
-    probable_packaging_type = _find_closest_packaging_type(rounded_ar)
+    probable_packaging_type = _find_closest_packaging_type(rounded_ar, packaging_type_lookup_ml)
+
+
+    ###############################################################################
+    ######################## Custom rules section :( ##############################
+    ###############################################################################
 
     # The only use case where aspect ratio itself is not sufficient : we have a squirrel in there !
     if beer_number == 63 :
         probable_packaging_type = PackagingType.Squirrel
 
-    # Hybrid mode, try to extract with the contouring method instead.
-    if not probable_packaging_type in [PackagingType.Bottle, PackagingType.Can, PackagingType.Squirrel ] :
+    if beer_number in [42, 50, 68, 72, 112] :
+        probable_packaging_type = PackagingType.BigBottle
+
+    if beer_number in [306] :
+        probable_packaging_type = PackagingType.Bottle
+
+    if beer_number in [332] :
+        probable_packaging_type = PackagingType.Can
+
+     # Very few beers have this issue, but
+    # for at least one of them BigBottle is a mishap' for the contouring extraction.
+    skip_contouring_process = False
+    if beer_number == 411 :
+        skip_contouring_process = True
+
+    ###############################################################################
+    ######################## End of custom rules section ##########################
+    ###############################################################################
+
+    # Hybrid mode, try to extract with ML method (costlier, but often of better quality)
+    if not skip_contouring_process and probable_packaging_type not in [PackagingType.Bottle, PackagingType.Can, PackagingType.Squirrel] :
         (aspect_ratio, output_image) = _extract_silhouette_with_contouring(img, background_color, fit_crop_image)
+        probable_packaging_type_contouring = _find_closest_packaging_type(rounded_ar, packaging_type_lookup_contouring)
 
     output_image = Image.fromarray(output_image)
     output_image.save(output_image_filepath)
