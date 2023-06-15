@@ -94,7 +94,7 @@ def cache_pdf_contents(filepath : Path, page : PageObject) :
         raise Exception("Content is missing from page document")
 
 
-def cache_images(directory : Path, page_file : Path) :
+def cache_images(directory : Path, page_file : Path, beer_number = 0) :
     if not directory.exists() :
         directory.mkdir(parents=True)
 
@@ -113,10 +113,10 @@ def cache_images(directory : Path, page_file : Path) :
         cropped_image.save(cropped_image_path)
 
         extracted_shape = directory.joinpath("extracted_silhouette.png")
-        aspect_ratio = utim.extract_biggest_silhouette(cropped_image_path, extracted_shape, fit_crop_image=True, ml_mode=False )
-        logger.log("Extracted image with aspect ratio : {}".format(aspect_ratio))
+        most_probable_packaging = utim.extract_biggest_silhouette(cropped_image_path, extracted_shape, logger, fit_crop_image=True, beer_number=beer_number)
+        logger.log("Extracted image {} with potential packaging : {}".format(beer_number, most_probable_packaging))
 
-    # Sometimes we can't even list the images because of some weird errors ealier in the pdf parsing methods
+    # Sometimes we can't even list the images because of some weird errors earlier in the pdf parsing methods
     except Exception as e :
         logger.log("Caught error while caching images for page {}".format(directory.name))
         logger.log(e.__repr__())
@@ -1256,13 +1256,14 @@ def main(args) :
     images_list = list_files(cached_images_dir, "extracted_silhouette", ".png")
 
     # Extracting pdf rendered images !
-    if skip_image_extraction == False and len(images_list) < 100 :
+    if skip_image_extraction == False and len(images_list) < 500 :
         logger.log("Found few {} pages images in {}. Triggering image extraction again.".format(len(images_list), cached_pages_dir))
         logger.log("Caching images to disk ...")
+
         for page in pages_list :
             page_images_dir = cached_images_dir.joinpath(page[1].stem)
             logger.log("Caching images for page {}".format(page[1].stem))
-            cache_images(page_images_dir, page[1])
+            cache_images(page_images_dir, page[1], page[0])
     else :
         logger.log("-> OK : Found {} pages images in {}".format(len(images_list), cached_pages_dir))
         logger.log("Image extraction step skipped.")

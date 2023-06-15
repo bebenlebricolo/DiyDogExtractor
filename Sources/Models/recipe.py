@@ -290,7 +290,10 @@ class MethodTimings(Jsonable) :
 
 class PackagingType(Enum) :
     Bottle = "Bottle"
+    BigBottle = "BigBottle"
+    Squirrel = "Squirrel" # Yes ... there is a squirrel in their bottles... number 63 - "The end of history" !
     Keg = "Keg"
+    Barrel = "Barrel"
     Can = "Can"
 
 @dataclass

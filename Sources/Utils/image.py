@@ -17,6 +17,17 @@ from skimage.draw import polygon
 
 from PIL import Image
 from .filesystem import ensure_folder_exist
+from ..Models.recipe import PackagingType
+from .logger import Logger
+
+packaging_type_lookup = [
+    # Packaging type           # avg aspect ratio
+    [PackagingType.Bottle,      0.27    ],
+    [PackagingType.BigBottle,   0.28    ],
+    [PackagingType.Can,         0.61    ],
+    [PackagingType.Keg,         0.48    ],
+    [PackagingType.Barrel,      0.74    ],
+]
 
 
 def _compute_perimeter(data : array) -> float:
@@ -87,7 +98,7 @@ def _scikit_find_biggest_contour(gray : cv2.Mat) -> tuple[float, float, np.ndarr
     aspect_ratio = _compute_aspect_ratio(biggest_contour)
     return (perimeter, aspect_ratio, biggest_contour)
 
-def _extract_image(img : cv2.Mat, contour : np.ndarray, output_filepath : Path, background_color=(0,0,0,0), fit_crop_image = True) :
+def _extract_image(img : cv2.Mat, contour : np.ndarray, background_color=(0,0,0,0), fit_crop_image = True) -> np.ndarray:
 
     # Fill in the hole created by the contour boundary
     height = len(img)
@@ -109,7 +120,7 @@ def _extract_image(img : cv2.Mat, contour : np.ndarray, output_filepath : Path, 
         bottom = y_boundaries[1]
         output_image = output_image.crop((left, top, right, bottom))  # type: ignore
 
-    output_image.save(output_filepath)
+    return np.array(output_image)
 
 def remove_gray_background(img : cv2.Mat) -> cv2.Mat :
     """Trying to get rid of the patterns with color extraction...
@@ -165,10 +176,29 @@ def remove_gray_background(img : cv2.Mat) -> cv2.Mat :
 
     return another_gray
 
+def _find_closest_packaging_type(aspect_ratio : float) -> PackagingType :
+    """Finds the most probable packaging type out of them all"""
+    min_distance = 100
+    most_probable_pack = packaging_type_lookup[0]
+    for pack in packaging_type_lookup :
+        distance = abs(aspect_ratio - pack[1])
+        if distance < min_distance :
+            min_distance = distance
+            most_probable_pack = pack
 
-def _extract_silhouette_with_ml(img : cv2.Mat, destination : Path) -> float :
+    return most_probable_pack[0]
+
+def _extract_silhouette_with_ml(img : cv2.Mat) -> tuple[float, np.ndarray] :
+    """Uses Machine learning models (rembg module) to extract image from its background
+       This method works very well for "bottles" and cans packages, however it fails for kegs and barrels.
+       @param :
+            img : input image, directly read from disk
+       @return
+            a tuple of the aspect ratio and the output image
+            -> Aspect ratio will be used to discriminate the kind of object we are probably facing, and try to extract
+            the image with the contouring method instead (hybrid approach)
+       """
     out_img = Image.fromarray(rembg.remove(img)) # type: ignore
-    output_image_ml = destination.parent.joinpath(destination.stem + "_ML.png")
     boundaries = _find_boundaries_non_transparent(np.array(out_img))
 
     left = boundaries[2]
@@ -176,28 +206,36 @@ def _extract_silhouette_with_ml(img : cv2.Mat, destination : Path) -> float :
     top = boundaries[0]
     bottom = boundaries[1]
     out_img_cropped = np.array(out_img.crop((left, top, right, bottom)))
-    success = cv2.imwrite(output_image_ml.as_posix(), out_img_cropped)
-    if not success :
-        print("Could not write extracted image on disk")
     aspect_ratio = abs(right - left) / abs(bottom - top)
 
-    return aspect_ratio
+    return (aspect_ratio, out_img_cropped)
 
-def _extract_silhouette_with_contouring(img : cv2.Mat, destination : Path, background_color = (0,0,0,0), fit_crop_image = True) -> float :
-    #opencv_image = np.array-(img)
+def _extract_silhouette_with_contouring(img : cv2.Mat, background_color = (0,0,0,0), fit_crop_image = True) -> tuple[float, np.ndarray]  :
+    """Relies on the marching squares method for contouring and mask generation (scikit module) in order to extract image from its background
+       This method works quite well for almost all kinds of packages, but the output is generally noisier than for the ML method and sometimes
+       fails on bottle labels where white levels are quite high (fools the iso-value research method of the marching squares algorithm).
+       This method is complementary to the ML one.
+       @param :
+            img              : input image, directly read from disk
+            background_color : used when performing image masking. Outer pixels, excluded from the mask, will receive this background color (transparent by default)
+            fit_crop_image   : fits the image to the minimal boundaries of the masked image.
+       @return
+            a tuple of the aspect ratio and the output image
+            -> Aspect ratio will be used to discriminate the kind of object we are probably facing.
+       """
     gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
     [perimeter, aspect_ratio, contour] = _scikit_find_biggest_contour(gray)
 
     # Force encode output as .png, in order to be sure file format supports transparency
-    output_image = destination.parent.joinpath(destination.stem + ".png")
-    _extract_image(img, contour, output_image, background_color, fit_crop_image)
-    return aspect_ratio
+    extracted_image = _extract_image(img, contour, background_color, fit_crop_image)
+    return (aspect_ratio, extracted_image)
 
-def extract_biggest_silhouette(source : Path, destination : Path, background_color = (0,0,0,0), fit_crop_image = True, ml_mode = True) -> float :
+def extract_biggest_silhouette(source : Path, destination : Path, logger : Logger, background_color = (0,0,0,0), fit_crop_image = True, beer_number = 0) -> PackagingType :
     """Extracts the biggest contiguous/opaque element from a source image and produces a .png output image with transparency
        @param :
             source           : source image file path
             destination      : output image file path
+            logger           : main logger used to log out some useful parsing information
             background_color : output image will have this background color (rgba format). Default is transparent.
             fit_crop_image   : if set to True, will crop the image to the bounding box of the resulting object
             ml_mode          : uses the Machine Learning algorithms in order to extract the images
@@ -209,18 +247,30 @@ def extract_biggest_silhouette(source : Path, destination : Path, background_col
     ensure_folder_exist(output_folder)
 
     if not source.exists() :
-        print("Could not find input image at pointed disk node : {}".format(source))
+        logger.log("Could not find input image at pointed disk node : {}".format(source))
         raise IOError("Could not read input image")
 
     img = cv2.imread(source.as_posix())
     aspect_ratio = 0.0
 
-    if ml_mode :
-        aspect_ratio = _extract_silhouette_with_ml(img, destination)
-    else :
-        aspect_ratio = _extract_silhouette_with_contouring(img, destination, background_color, fit_crop_image)
+    output_image_filepath = destination.parent.joinpath(destination.stem + ".png")
+    # Trying with ML first
+    (aspect_ratio, output_image) = _extract_silhouette_with_ml(img)
 
-    return aspect_ratio
+    rounded_ar = round(aspect_ratio, 2)
+    probable_packaging_type = _find_closest_packaging_type(rounded_ar)
+
+    # The only use case where aspect ratio itself is not sufficient : we have a squirrel in there !
+    if beer_number == 63 :
+        probable_packaging_type = PackagingType.Squirrel
+
+    # Hybrid mode, try to extract with the contouring method instead.
+    if not probable_packaging_type in [PackagingType.Bottle, PackagingType.Can, PackagingType.Squirrel ] :
+        (aspect_ratio, output_image) = _extract_silhouette_with_contouring(img, background_color, fit_crop_image)
+
+    output_image = Image.fromarray(output_image)
+    output_image.save(output_image_filepath)
+    return probable_packaging_type
 
 
 def extract_zone_from_image(pixmap : Pixmap, box : list[float]) -> Image.Image :
