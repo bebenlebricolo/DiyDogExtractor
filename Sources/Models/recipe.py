@@ -1,7 +1,8 @@
 from enum import Enum
-from .jsonable import Jsonable
+from .jsonable import Jsonable, JsonElement, JsonProperty
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import Optional, Literal
+from .record import CloudRecord, FileRecord, Record, RecordKind, RecordBuilder
 
 @dataclass
 class Description(Jsonable) :
@@ -312,8 +313,8 @@ class Recipe(Jsonable) :
     first_brewed : str = ""                         # Date of first brew
 
     # ibu -> Ibus are stored within the "Basics" object, despite not 100% matching the recipe it makes sense to have it there instead
-    image : str = "" # Ref to file with image
-    original_pdf_page : str = "" # Ref to original pdf page extracted from DiyDog book
+    #image : JsonProperty[Literal['image'], Record] = field(default_factory=JsonProperty)   # Ref to beer thumbnail image
+    original_pdf_page : Optional[Record] = None     # Ref to original pdf page extracted from DiyDog book
     description : Description = field(default_factory=Description)
     basics : Basics = field(default_factory=Basics)
     ingredients : Ingredients = field(default_factory=Ingredients)
@@ -334,8 +335,8 @@ class Recipe(Jsonable) :
             "pageNumber" : self.page_number,
             "tags" : self.tags,
             "firstBrewed" : self.first_brewed,
-            "image" : self.image,
-            "originalPdfPage" : self.original_pdf_page,
+            #self.image.name : self.image.to_json() if self.image is not None else None,
+            #self.original_pdf_page.name : self.original_pdf_page.to_json() if self.original_pdf_page is not None else None,
             "description" : self.description.to_json(),
             "basics" : self.basics.to_json(),
             "foodPairing" : self.food_pairing.to_json() if self.food_pairing else None,
@@ -356,8 +357,10 @@ class Recipe(Jsonable) :
             for tag in content["tags"] :
                 self.tags.append(tag)
         self.first_brewed = self._read_prop("firstBrewed", content, "")
-        self.image = self._read_prop("image", content, "")
-        self.original_pdf_page = self._read_prop("originalPdfPage", content, "")
+
+        #self.image = RecordBuilder.from_json(self.image.get_node(content))
+        #self.image = self._read_prop("image", content, "")
+        #self.original_pdf_page = self._read_prop("originalPdfPage", content, "")
 
         if "description" in content :
             self.description.from_json(content["description"])

@@ -227,10 +227,10 @@ class TestRecipeModels(unittest.TestCase) :
         recipe.first_brewed = "I don't know !"
         recipe.food_pairing = self.get_fake_FoodPairing()
         recipe.ingredients = self.get_fake_Ingredients()
-        recipe.image = "somewhere on this computer, probably"
+        #recipe.image = "somewhere on this computer, probably"
         recipe.name = "Fake beer name"
         recipe.number = 123
-        recipe.original_pdf_page = "somewhere ELSE on this computer"
+        #recipe.original_pdf_page = "somewhere ELSE on this computer"
         recipe.packaging = self.get_fake_Packaging()
         recipe.page_number = 321
         recipe.tags = [
