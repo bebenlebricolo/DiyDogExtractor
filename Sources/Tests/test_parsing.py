@@ -33,11 +33,19 @@ class TestParsing(unittest.TestCase) :
         escaped = escape_content(test_string)
         self.assertEqual(escaped, expected)
 
-    def test_escape_string_with_octal(self) :
-        test_string = R"Another string with brewer\222s tip \\ "
+    def test_escape_string_with_octal_unicode_escape_method(self) :
+        test_string = R"Another string with brewer\047s tip \\ "
         expected = R"Another string with brewer's tip \ "
-        escaped = expected.encode().decode("unicode-escape")
+        escaped = test_string.encode().decode("unicode-escape")
         self.assertEqual(escaped, expected)
+
+    def test_escape_string_with_octal_custom_method(self) :
+        test_string = R"Another string with brewer\047s tip \\ \055 "
+        expected = R"Another string with brewer's tip \ - "
+        escaped = escape_content(test_string)
+        print(escaped)
+        self.assertEqual(escaped, expected)
+
 
 if __name__ == "__main__" :
     unittest.main()

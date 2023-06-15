@@ -371,7 +371,8 @@ class Recipe(Jsonable) :
             self.method_timings.from_json(content["methodTimings"])
         if "packaging" in content :
             self.packaging.from_json(content["packaging"])
-        if "parsingErrors" in content:
+
+        if "parsingErrors" in content and content["parsingErrors"] is not None:
             self.parsing_errors = []
             for elem in content["parsingErrors"] :
                 self.parsing_errors.append(elem)
