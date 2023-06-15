@@ -106,15 +106,15 @@ def cache_images(directory : Path, page_file : Path) :
 
         # Cropping area : left, right, top, bottom
         #                  x0    x1     y0    y1
-        cropping_zone = [0.64, 0.89, 0.26, 0.69]
+        cropping_zone = [0.64, 0.92, 0.26, 0.69]
         cropped_image = utim.extract_zone_from_image(full_page_rendered, cropping_zone )
 
         cropped_image_path = directory.joinpath("cropped.png")
         cropped_image.save(cropped_image_path)
 
         extracted_shape = directory.joinpath("extracted_silhouette.png")
-        (perimeter, aspect_ratio) = utim.extract_biggest_silhouette(cropped_image_path, extracted_shape, True)
-        logger.log("Extracted image with perimeter : {} and aspect ratio : {}".format(perimeter, aspect_ratio))
+        aspect_ratio = utim.extract_biggest_silhouette(cropped_image_path, extracted_shape, fit_crop_image=True, ml_mode=False )
+        logger.log("Extracted image with aspect ratio : {}".format(aspect_ratio))
 
     # Sometimes we can't even list the images because of some weird errors ealier in the pdf parsing methods
     except Exception as e :

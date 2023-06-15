@@ -6,10 +6,14 @@ import numpy as np
 from pathlib import Path
 from fitz import Pixmap
 
+# Used for ML image extraction (background removal)
+import rembg
 from matplotlib import pyplot as plt
 
+# Used for contour drawing
 from skimage import measure
 from skimage.draw import polygon
+
 
 from PIL import Image
 from .filesystem import ensure_folder_exist
@@ -161,15 +165,43 @@ def remove_gray_background(img : cv2.Mat) -> cv2.Mat :
 
     return another_gray
 
-def extract_biggest_silhouette(source : Path, destination : Path, background_color = (0,0,0,0), fit_crop_image = True) -> tuple[float, float]:
+
+def _extract_silhouette_with_ml(img : cv2.Mat, destination : Path) -> float :
+    out_img = Image.fromarray(rembg.remove(img)) # type: ignore
+    output_image_ml = destination.parent.joinpath(destination.stem + "_ML.png")
+    boundaries = _find_boundaries_non_transparent(np.array(out_img))
+
+    left = boundaries[2]
+    right = boundaries[3]
+    top = boundaries[0]
+    bottom = boundaries[1]
+    out_img_cropped = np.array(out_img.crop((left, top, right, bottom)))
+    success = cv2.imwrite(output_image_ml.as_posix(), out_img_cropped)
+    if not success :
+        print("Could not write extracted image on disk")
+    aspect_ratio = abs(right - left) / abs(bottom - top)
+
+    return aspect_ratio
+
+def _extract_silhouette_with_contouring(img : cv2.Mat, destination : Path, background_color = (0,0,0,0), fit_crop_image = True) -> float :
+    #opencv_image = np.array-(img)
+    gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+    [perimeter, aspect_ratio, contour] = _scikit_find_biggest_contour(gray)
+
+    # Force encode output as .png, in order to be sure file format supports transparency
+    output_image = destination.parent.joinpath(destination.stem + ".png")
+    _extract_image(img, contour, output_image, background_color, fit_crop_image)
+    return aspect_ratio
+
+def extract_biggest_silhouette(source : Path, destination : Path, background_color = (0,0,0,0), fit_crop_image = True, ml_mode = True) -> float :
     """Extracts the biggest contiguous/opaque element from a source image and produces a .png output image with transparency
        @param :
             source           : source image file path
             destination      : output image file path
             background_color : output image will have this background color (rgba format). Default is transparent.
             fit_crop_image   : if set to True, will crop the image to the bounding box of the resulting object
+            ml_mode          : uses the Machine Learning algorithms in order to extract the images
        @returns :
-            biggest contour perimeter (float) value
             aspect ratio of the image (float) value
     """
 
@@ -181,32 +213,14 @@ def extract_biggest_silhouette(source : Path, destination : Path, background_col
         raise IOError("Could not read input image")
 
     img = cv2.imread(source.as_posix())
-    gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+    aspect_ratio = 0.0
 
-    import rembg
-    out_img = Image.fromarray(rembg.remove(img)) # type: ignore
-    #plt.imshow(out_img)
-    #plt.show()
+    if ml_mode :
+        aspect_ratio = _extract_silhouette_with_ml(img, destination)
+    else :
+        aspect_ratio = _extract_silhouette_with_contouring(img, destination, background_color, fit_crop_image)
 
-    [perimeter, aspect_ratio, contour] = _scikit_find_biggest_contour(gray)
-    #[perimeter, aspect_ratio, contour] = _scikit_find_biggest_contour(another_gray)
-    print("Extracted contour for image \"{}\" with perimeter : {} and aspect ratio : {}".format(source.name, perimeter, aspect_ratio))
-
-    # Force encode output as .png, in order to be sure file format supports transparency
-    output_image_ml = destination.parent.joinpath(destination.stem + "_ML.png")
-    output_image = destination.parent.joinpath(destination.stem + ".png")
-    _extract_image(img, contour, output_image, background_color, fit_crop_image)
-
-    boundaries = _find_boundaries_non_transparent(np.array(out_img))
-
-    left = boundaries[2]
-    right = boundaries[3]
-    top = boundaries[0]
-    bottom = boundaries[1]
-    out_img_cropped = out_img.crop((left, top, right, bottom))
-    out_img_cropped.save(output_image_ml)
-
-    return (perimeter, aspect_ratio)
+    return aspect_ratio
 
 
 def extract_zone_from_image(pixmap : Pixmap, box : list[float]) -> Image.Image :
