@@ -25,6 +25,7 @@ from .Utils.logger import Logger
 from .Utils.downloader import download_pdf
 from .Models.blocks import PageBlocks, Coordinates, TextBlock, TextElement
 from .Models import recipe as rcp
+from .Models import record as rec
 from .Utils import image as utim
 from .Utils.filesystem import ensure_folder_exist, list_pages, list_files
 
@@ -1128,6 +1129,22 @@ def extract_recipe(page : PageBlocks) -> rcp.Recipe :
     out = extract_body(body_elements, out)
     return out
 
+def hook_pdf_and_extracted_image_to_recipe(recipe : rcp.Recipe, cached_images_directory : Path, cached_pdf_pages_directory : Path, image_name : str ):
+    page_image_dir = cached_images_directory.joinpath(f"page_{recipe.page_number}")
+    extracted_image_file = page_image_dir.joinpath(image_name)
+
+    # Hook up extracted image
+    if extracted_image_file.exists():
+        recipe.image.value = rec.FileRecord(extracted_image_file.as_posix())
+    else :
+        recipe.image.value = rec.FileRecord("not found")
+
+    pdf_page_file = cached_pdf_pages_directory.joinpath(f"page_{recipe.number}.pdf")
+    if pdf_page_file.exists():
+        recipe.original_pdf_page.value = rec.FileRecord(pdf_page_file.as_posix())
+    else :
+        recipe.original_pdf_page.value = rec.FileRecord("not found")
+
 
 def main(args) :
     arg_parser = argparse.ArgumentParser("Python DiyDogExtractor tool. This software downloads the published DiyDog pdf book and tries to reconstruct a complete database out of it/")
@@ -1311,6 +1328,10 @@ def main(args) :
             logger.log("Could not extract recipe from beer {}".format(page.index))
             logger.log("Error was : {}".format(e))
             logger.log(traceback.format_exc())
+
+    # Hook pdf pages and extracted images / thumbnails to recipes
+    for recipe in recipes_list :
+        hook_pdf_and_extracted_image_to_recipe(recipe, cached_images_dir, cached_pages_dir, "extracted_silhouette.png")
 
     # Dump recipes on disk now !
     if not cached_extracted_recipes.exists() :

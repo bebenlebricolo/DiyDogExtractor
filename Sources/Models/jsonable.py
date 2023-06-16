@@ -45,8 +45,3 @@ class JsonOptionalProperty(Generic[T]):
         if self._prop_key in content :
             return content[self._prop_key]
         return None
-
-def JsonProps_custom_equal(left : Union[JsonProperty, JsonOptionalProperty], right : Union[JsonProperty, JsonOptionalProperty]) -> bool:
-    identical = True
-    identical &= left.value == right.value
-    return identical

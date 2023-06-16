@@ -245,5 +245,30 @@ class TestRecipeModels(unittest.TestCase) :
         self.assertEqual(recipe, parsed)
 
 
+    def test_multiple_recipes_instantiation_and_isolation(self) :
+        """This test tries to instantiate many recipes in a row, and none of them should be equal."""
+        recipe_1 = Recipe()
+        recipe_1.tags.append("1")
+        recipe_1.tags.append("2")
+        recipe_1.tags.append("3")
+
+        recipe_2 = Recipe()
+        self.assertNotEqual(recipe_1.tags, recipe_2.tags)
+
+    def test_multiple_instantiations_and_isolation(self) :
+        class TestClass :
+            tags : list[str]
+            def __init__(self, tags = []) -> None:
+                self.tags = tags
+
+        test_object_1 = TestClass()
+        test_object_1.tags.append("1")
+        test_object_1.tags.append("2")
+        test_object_1.tags.append("3")
+
+        test_object_2 = TestClass()
+        test_object_2.tags = []
+        self.assertNotEqual(test_object_1.tags, test_object_2.tags)
+
 if __name__ == "__main__" :
     unittest.main()

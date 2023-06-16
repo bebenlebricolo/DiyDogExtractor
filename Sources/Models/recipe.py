@@ -3,7 +3,7 @@ from typing import Optional
 from dataclasses import dataclass, field
 
 # Local utils imports
-from .jsonable import JsonProps_custom_equal, Jsonable, JsonProperty, JsonOptionalProperty
+from .jsonable import Jsonable, JsonProperty, JsonOptionalProperty
 from .record import Record, RecordBuilder, RecordKind, FileRecord, CloudRecord
 
 @dataclass
@@ -305,6 +305,7 @@ class Packaging(Jsonable) :
     # Otherwise we can't get this to work with regular @dataclass and field(default_factory=...) for `PackagingType` object.
     type : PackagingType = PackagingType.Bottle
 
+@dataclass
 class Recipe(Jsonable) :
     image : JsonProperty[Record]                    # Ref to file with image
     original_pdf_page : JsonProperty[Record]        # Ref to original pdf page extracted from DiyDog book
@@ -317,47 +318,72 @@ class Recipe(Jsonable) :
     first_brewed : str  # Date of first brew
 
     # ibu -> Ibus are stored within the "Basics" object, despite not 100% matching the recipe it makes sense to have it there instead
-    description : Description
-    basics : Basics
-    ingredients : Ingredients
-    brewers_tip : BrewersTip
-    method_timings : MethodTimings
-    packaging : Packaging
+    description : Description = field(default_factory=Description)
+    basics : Basics = field(default_factory=Basics)
+    ingredients : Ingredients = field(default_factory=Ingredients)
+    brewers_tip : BrewersTip = field(default_factory=BrewersTip)
+    method_timings : MethodTimings = field(default_factory=MethodTimings)
+    packaging : Packaging = field(default_factory=Packaging)
 
     # Some beers have parsing errors along the way, so list some potential issues here and let the end user check the pdf instead
-    parsing_errors : Optional[list[str]]
+    parsing_errors : Optional[list[str]] = None
     # Some beers don't have food pairing associated (happens for beer #79 and #156)
-    food_pairing : Optional[FoodPairing]
+    food_pairing : Optional[FoodPairing] = None
 
 
-    def __init__( self, name : str = "",
-                  subtitle : str = "",
-                  number : int = 0,
-                  page_number : int = 0,
-                  tags : list[str] = [],
-                  first_brewed : str = "",
-                  description : Description = Description(),
-                  basics : Basics = Basics(),
-                  ingredients : Ingredients = Ingredients(),
-                  brewers_tip : BrewersTip = BrewersTip(),
-                  method_timing : MethodTimings = MethodTimings(),
-                  packaging : Packaging = Packaging()) :
+    # NOTE : I had to manually override everything, because Python won't let me assign default values in the constructor.
+    # This is very weird; but upon two contiguous instantiation of the same object like this :
+    # def test_multiple_instantiations_and_isolation(self) :
+    #     class TestClass :
+    #         tags : list[str]
+    #         def __init__(self, tags = []) -> None:
+    #             self.tags = tags
+
+    #     test_object_1 = TestClass()
+    #     test_object_1.tags.append("1")
+    #     test_object_1.tags.append("2")
+    #     test_object_1.tags.append("3")
+
+    #     test_object_2 = TestClass()
+    #     self.assertEqual(test_object_1.tags, test_object_2.tags)
+
+    # This is super weird, it looks like the default object instances remain somewhere in local memory, and as Python uses references to pass
+    # objects left and right, they happen to map the the same object, which is then linked to multiple class instances.
+    # A solution is that the user must specify himself afterwards test_object_2.tags = [] to force python to allocate new memory, which won't be linked to the default elements anymore
+    # NOTE 2 : this is referred to as mutating default argument and is found everywhere in internet :
+    # https://stackoverflow.com/a/1321061
+
+
+    def __init__( self, name = None,
+                        subtitle = None,
+                        number = None,
+                        page_number = None,
+                        tags = None,
+                        first_brewed = None,
+                        description = None,
+                        basics = None,
+                        ingredients = None,
+                        brewers_tip = None,
+                        method_timings = None,
+                        packaging = None,
+                        parsing_errors = None,
+                        food_pairing = None) :
         self.image = JsonProperty('image', FileRecord())
         self.original_pdf_page = JsonProperty('originalPdfPage', FileRecord())
-        self.name = name
-        self.subtitle = subtitle
-        self.number = number
-        self.page_number = page_number
-        self.tags = tags
-        self.first_brewed = first_brewed
-        self.description = description
-        self.basics = basics
-        self.ingredients = ingredients
-        self.brewers_tip = brewers_tip
-        self.method_timings = method_timing
-        self.packaging = packaging
-        self.parsing_errors = None
-        self.food_pairing = None
+        self.name = name or ""
+        self.subtitle = subtitle or ""
+        self.number = number or 0
+        self.page_number = page_number or 0
+        self.tags = tags or []
+        self.first_brewed = first_brewed or ""
+        self.description = description or Description()
+        self.basics = basics or Basics()
+        self.ingredients = ingredients or Ingredients()
+        self.brewers_tip = brewers_tip or BrewersTip()
+        self.method_timings = method_timings or MethodTimings()
+        self.packaging = packaging or Packaging()
+        self.parsing_errors = parsing_errors
+        self.food_pairing = food_pairing
 
 
     def to_json(self) -> dict:
