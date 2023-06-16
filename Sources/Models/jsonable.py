@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Any, Optional, Generic, TypeVar
+from typing import Any, Optional, Generic, TypeVar, Union
 
 class Jsonable :
     def _read_prop(self, key : str, content : dict, default) :
@@ -28,6 +28,9 @@ class JsonProperty(Generic[T]):
             return content[self._prop_key]
         return None
 
+    def __eq__(self, other: object) -> bool:
+        return self.value == other.value #type: ignore
+
 T = TypeVar("T")
 @dataclass
 class JsonOptionalProperty(Generic[T]):
@@ -42,3 +45,8 @@ class JsonOptionalProperty(Generic[T]):
         if self._prop_key in content :
             return content[self._prop_key]
         return None
+
+def JsonProps_custom_equal(left : Union[JsonProperty, JsonOptionalProperty], right : Union[JsonProperty, JsonOptionalProperty]) -> bool:
+    identical = True
+    identical &= left.value == right.value
+    return identical

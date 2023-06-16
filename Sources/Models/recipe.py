@@ -1,7 +1,10 @@
 from enum import Enum
-from .jsonable import Jsonable
-from dataclasses import dataclass, field
 from typing import Optional
+from dataclasses import dataclass, field
+
+# Local utils imports
+from .jsonable import JsonProps_custom_equal, Jsonable, JsonProperty, JsonOptionalProperty
+from .record import Record, RecordBuilder, RecordKind, FileRecord, CloudRecord
 
 @dataclass
 class Description(Jsonable) :
@@ -302,29 +305,60 @@ class Packaging(Jsonable) :
     # Otherwise we can't get this to work with regular @dataclass and field(default_factory=...) for `PackagingType` object.
     type : PackagingType = PackagingType.Bottle
 
-@dataclass
 class Recipe(Jsonable) :
-    name : str = ""                                 # Beer title
-    subtitle : str = ""                             # Beer subtitle, contains tags and other information
-    number : int = 0                                # Refers to the "#1" tag
-    page_number : int = 0                           # page number as parsed from pdf page
-    tags : list[str] = field(default_factory=list)  # tag line
-    first_brewed : str = ""                         # Date of first brew
+    image : JsonProperty[Record]                    # Ref to file with image
+    original_pdf_page : JsonProperty[Record]        # Ref to original pdf page extracted from DiyDog book
+
+    name : str          # Beer title
+    subtitle : str      # Beer subtitle, contains tags and other information
+    number : int        # Refers to the "#1" tag
+    page_number : int   # page number as parsed from pdf page
+    tags : list[str]    # tag line
+    first_brewed : str  # Date of first brew
 
     # ibu -> Ibus are stored within the "Basics" object, despite not 100% matching the recipe it makes sense to have it there instead
-    image : str = "" # Ref to file with image
-    original_pdf_page : str = "" # Ref to original pdf page extracted from DiyDog book
-    description : Description = field(default_factory=Description)
-    basics : Basics = field(default_factory=Basics)
-    ingredients : Ingredients = field(default_factory=Ingredients)
-    brewers_tip : BrewersTip = field(default_factory=BrewersTip)
-    method_timings : MethodTimings = field(default_factory=MethodTimings)
-    packaging : Packaging = field(default_factory=Packaging)
+    description : Description
+    basics : Basics
+    ingredients : Ingredients
+    brewers_tip : BrewersTip
+    method_timings : MethodTimings
+    packaging : Packaging
 
     # Some beers have parsing errors along the way, so list some potential issues here and let the end user check the pdf instead
-    parsing_errors : Optional[list[str]] = None
+    parsing_errors : Optional[list[str]]
     # Some beers don't have food pairing associated (happens for beer #79 and #156)
-    food_pairing : Optional[FoodPairing] = None
+    food_pairing : Optional[FoodPairing]
+
+
+    def __init__( self, name : str = "",
+                  subtitle : str = "",
+                  number : int = 0,
+                  page_number : int = 0,
+                  tags : list[str] = [],
+                  first_brewed : str = "",
+                  description : Description = Description(),
+                  basics : Basics = Basics(),
+                  ingredients : Ingredients = Ingredients(),
+                  brewers_tip : BrewersTip = BrewersTip(),
+                  method_timing : MethodTimings = MethodTimings(),
+                  packaging : Packaging = Packaging()) :
+        self.image = JsonProperty('image', FileRecord())
+        self.original_pdf_page = JsonProperty('originalPdfPage', FileRecord())
+        self.name = name
+        self.subtitle = subtitle
+        self.number = number
+        self.page_number = page_number
+        self.tags = tags
+        self.first_brewed = first_brewed
+        self.description = description
+        self.basics = basics
+        self.ingredients = ingredients
+        self.brewers_tip = brewers_tip
+        self.method_timings = method_timing
+        self.packaging = packaging
+        self.parsing_errors = None
+        self.food_pairing = None
+
 
     def to_json(self) -> dict:
         return {
@@ -334,8 +368,8 @@ class Recipe(Jsonable) :
             "pageNumber" : self.page_number,
             "tags" : self.tags,
             "firstBrewed" : self.first_brewed,
-            "image" : self.image,
-            "originalPdfPage" : self.original_pdf_page,
+            self.image._prop_key : self.image.value.to_json(),
+            self.original_pdf_page._prop_key : self.original_pdf_page.value.to_json(),
             "description" : self.description.to_json(),
             "basics" : self.basics.to_json(),
             "foodPairing" : self.food_pairing.to_json() if self.food_pairing else None,
@@ -356,8 +390,17 @@ class Recipe(Jsonable) :
             for tag in content["tags"] :
                 self.tags.append(tag)
         self.first_brewed = self._read_prop("firstBrewed", content, "")
-        self.image = self._read_prop("image", content, "")
-        self.original_pdf_page = self._read_prop("originalPdfPage", content, "")
+
+        # Image and Original PDF page deserve special handling, as they can be both a FileRecord or Cloud Record
+        image_node = self.image.get_node(content)
+        if image_node :
+            parsed_record = RecordBuilder.from_json(image_node)
+            self.image.value = parsed_record or self.image.value
+
+        orig_pdf_node = self.original_pdf_page.get_node(content)
+        if orig_pdf_node :
+            parsed_record = RecordBuilder.from_json(orig_pdf_node)
+            self.original_pdf_page.value = parsed_record or self.original_pdf_page.value
 
         if "description" in content :
             self.description.from_json(content["description"])
@@ -384,3 +427,27 @@ class Recipe(Jsonable) :
         if not self.parsing_errors :
             self.parsing_errors = []
         self.parsing_errors.append(error_string)
+
+    def __eq__(self, other: object) -> bool:
+        """Custom comparison tool as it seems the regular == one is not explicit (when using asserts)
+        about what's the issue, so this comparison tool will help pinpoint what's the issue more easily"""
+        if type(self) != type(other) :
+            return False
+        identical = True
+        identical &= self.image ==  other.image                         #type: ignore
+        identical &= self.original_pdf_page == other.original_pdf_page  #type: ignore
+        identical &= self.name == other.name                            #type: ignore
+        identical &= self.subtitle == other.subtitle                    #type: ignore
+        identical &= self.number == other.number                        #type: ignore
+        identical &= self.page_number == other.page_number              #type: ignore
+        identical &= self.tags == other.tags                            #type: ignore
+        identical &= self.first_brewed == other.first_brewed            #type: ignore
+        identical &= self.description == other.description              #type: ignore
+        identical &= self.basics == other.basics                        #type: ignore
+        identical &= self.ingredients == other.ingredients              #type: ignore
+        identical &= self.brewers_tip == other.brewers_tip              #type: ignore
+        identical &= self.method_timings == other.method_timings        #type: ignore
+        identical &= self.packaging == other.packaging                  #type: ignore
+        identical &= self.parsing_errors == other.parsing_errors        #type: ignore
+        identical &= self.food_pairing == other.food_pairing            #type: ignore
+        return identical
