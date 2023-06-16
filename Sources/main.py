@@ -27,8 +27,8 @@ from .Models.blocks import PageBlocks, Coordinates, TextBlock, TextElement
 from .Models import recipe as rcp
 from .Models import record as rec
 from .Utils import image as utim
-from .Utils.filesystem import ensure_folder_exist, list_pages, list_files
 
+from .Utils.filesystem import ensure_folder_exist, list_pages_with_number, list_files_pattern
 C_DIYDOG_URL = "https://brewdogmedia.s3.eu-west-2.amazonaws.com/docs/2019+DIY+DOG+-+V8.pdf"
 
 GRAMS_PATTERN = re.compile(r"([0-9]+\.?[0-9]*) *([k]?[g])")
@@ -1129,21 +1129,39 @@ def extract_recipe(page : PageBlocks) -> rcp.Recipe :
     out = extract_body(body_elements, out)
     return out
 
-def hook_pdf_and_extracted_image_to_recipe(recipe : rcp.Recipe, cached_images_directory : Path, cached_pdf_pages_directory : Path, image_name : str ):
+def hook_pdf_and_extracted_image_to_recipe(recipe : rcp.Recipe,
+                                           recipe_out_dir : Path,
+                                           cached_images_directory : Path,
+                                           cached_pdf_pages_directory : Path,
+                                           image_name : str ,
+                                           relative_path_mode = True):
+    """Function used to hook up the pdf pages and extracted images to the final recipe.
+       It uses both absolute path resolution or relative (does not check that the file exist though)
+    """
+
     page_image_dir = cached_images_directory.joinpath(f"page_{recipe.page_number}")
     extracted_image_file = page_image_dir.joinpath(image_name)
 
-    # Hook up extracted image
-    if extracted_image_file.exists():
-        recipe.image.value = rec.FileRecord(extracted_image_file.as_posix())
-    else :
-        recipe.image.value = rec.FileRecord("not found")
+    if relative_path_mode :
+        base_filename = f"beer_{recipe.number}"
+        relative_image_filepath = recipe_out_dir.joinpath(f"{base_filename}")
+        relative_pdf_page_filepath = recipe_out_dir.joinpath(f"pdf_pages/{base_filename}.pdf")
+        recipe.image.value = rec.FileRecord(f"{relative_image_filepath}")
+        recipe.pdf_page.value = rec.FileRecord(f"{relative_pdf_page_filepath}")
 
-    pdf_page_file = cached_pdf_pages_directory.joinpath(f"page_{recipe.number}.pdf")
-    if pdf_page_file.exists():
-        recipe.original_pdf_page.value = rec.FileRecord(pdf_page_file.as_posix())
     else :
-        recipe.original_pdf_page.value = rec.FileRecord("not found")
+        # Hook up extracted image
+        relative_image_filepath = recipe_out_dir.joinpath(f"images/{image_name}")
+        recipe.image.value = rec.FileRecord(extracted_image_file.as_posix())
+        pdf_page_file = cached_pdf_pages_directory.joinpath(f"page_{recipe.number}.pdf")
+        recipe.pdf_page.value = rec.FileRecord(pdf_page_file.as_posix())
+
+
+def deploy_to_directory(deploy_dir : Path, cached_recipes_dir : Path, cached_images_dir : Path, cached_pdf_pages_dir : Path) :
+    ensure_folder_exist(deploy_dir)
+
+    #list_files_pattern(cached_recipes_dir, "recipe)
+
 
 
 def main(args) :
@@ -1167,11 +1185,11 @@ def main(args) :
     if aggregate_results :
         logger.log("json data will also be aggregated into a single file")
 
-    cached_pages_dir = CACHE_DIRECTORY.joinpath("pages")
+    cached_pdf_pages_dir = CACHE_DIRECTORY.joinpath("pages")
     cached_blocks_dir = CACHE_DIRECTORY.joinpath("blocks")
     cached_pdf_raw_content = CACHE_DIRECTORY.joinpath("pdf_raw_contents")
     cached_images_dir = CACHE_DIRECTORY.joinpath("images")
-    cached_extracted_recipes = CACHE_DIRECTORY.joinpath("extracted_recipes")
+    cached_recipes_dir = CACHE_DIRECTORY.joinpath("extracted_recipes")
     # Pages decoded content with pypdf library
     cached_content_dir = CACHE_DIRECTORY.joinpath("contents")
     #cached_custom_blocks = CACHE_DIRECTORY.joinpath("custom_blocks")
@@ -1187,14 +1205,14 @@ def main(args) :
     pages_content : list[PageBlocks] = []
     # List already cached pages before going, if nothing is there then trigger the force cache flag
     logger.log("Listing available pdf pages before starting up ...")
-    pages_list = list_pages(cached_pages_dir, "page_", ".pdf")
+    pages_list = list_pages_with_number(cached_pdf_pages_dir, ".pdf")
     if len(pages_list) < 100 :
         force_caching = True
         logger.log("Very few pages were found on disk (actually : {} pages), app will regenerate the cache now.".format(len(pages_list)))
 
     # Extract pages for caching purposes
     if force_caching :
-        logger.log("Extracting all beer pages to {}".format(cached_pages_dir))
+        logger.log("Extracting all beer pages to {}".format(cached_pdf_pages_dir))
         with open(pdf_file, "rb") as file :
             reader = PdfReader(file)
 
@@ -1212,7 +1230,7 @@ def main(args) :
 
 
                 logger.log("Caching page to disk ...")
-                cache_single_pdf_page(cached_pages_dir.joinpath(encoded_name + ".pdf"), page=page)
+                cache_single_pdf_page(cached_pdf_pages_dir.joinpath(encoded_name + ".pdf"), page=page)
                 content_filepath = cached_content_dir.joinpath(encoded_name + ".json")
 
                 # Fetch raw contents and manually parse it (works better than brute text extraction from pypdf)
@@ -1260,21 +1278,21 @@ def main(args) :
                 pages_content.append(page_blocks)
                 cache_contents(content_filepath, page_blocks)
 
-        logger.log("-> OK : Pages extracted successfully in {}".format(cached_pages_dir))
+        logger.log("-> OK : Pages extracted successfully in {}".format(cached_pdf_pages_dir))
 
 
     # List already cached pages
     logger.log("Listing available pdf pages ...")
-    pages_list = list_pages(cached_pages_dir, "page_", ".pdf")
-    logger.log("-> OK : Found {} pages in {}".format(len(pages_list), cached_pages_dir))
+    pages_list = list_pages_with_number(cached_pdf_pages_dir)
+    logger.log("-> OK : Found {} pages in {}".format(len(pages_list), cached_pdf_pages_dir))
 
     # List already cached images
     logger.log("Listing available pages images and extracted images...")
-    images_list = list_files(cached_images_dir, "extracted_silhouette", ".png")
+    images_list = list_files_pattern(cached_images_dir, "extracted_silhouette", ".png")
 
     # Extracting pdf rendered images !
     if skip_image_extraction == False and len(images_list) < 100 :
-        logger.log("Found few {} pages images in {}. Triggering image extraction again.".format(len(images_list), cached_pages_dir))
+        logger.log("Found few {} pages images in {}. Triggering image extraction again.".format(len(images_list), cached_pdf_pages_dir))
         logger.log("Caching images to disk ...")
 
         # DEBUG : used to only feed those pages to the image extraction process
@@ -1291,17 +1309,17 @@ def main(args) :
             logger.log("Caching images for page {}".format(page[1].stem))
             cache_images(page_images_dir, page[1], page[0])
     else :
-        logger.log("-> OK : Found {} pages images in {}".format(len(images_list), cached_pages_dir))
+        logger.log("-> OK : Found {} pages images in {}".format(len(images_list), cached_pdf_pages_dir))
         logger.log("Image extraction step skipped.")
 
     # List already cached images
     logger.log("Listing available pages images and extracted images...")
-    images_list = list_files(cached_images_dir, "extracted_silhouette", ".png")
-    logger.log("-> OK : Found {} pages images in {}".format(len(images_list), cached_pages_dir))
+    images_list = list_files_pattern(cached_images_dir, "extracted_silhouette", ".png")
+    logger.log("-> OK : Found {} pages images in {}".format(len(images_list), cached_pdf_pages_dir))
 
     logger.log("Listing available json content from pages ...")
-    pages_content_list = list_pages(cached_content_dir, "page_", ".json")
-    logger.log("-> OK : Found {} pages in {}".format(len(pages_list), cached_pages_dir))
+    pages_content_list = list_pages_with_number(cached_content_dir, ".json")
+    logger.log("-> OK : Found {} pages in {}".format(len(pages_list), cached_pdf_pages_dir))
     for page in pages_content_list :
         page_index = page[0]
         found_elem = [x for x in pages_content if  x.index == page_index ]
@@ -1331,17 +1349,17 @@ def main(args) :
 
     # Hook pdf pages and extracted images / thumbnails to recipes
     for recipe in recipes_list :
-        hook_pdf_and_extracted_image_to_recipe(recipe, cached_images_dir, cached_pages_dir, "extracted_silhouette.png")
+        hook_pdf_and_extracted_image_to_recipe(recipe, cached_recipes_dir,  cached_images_dir, cached_pdf_pages_dir, "extracted_silhouette.png")
 
     # Dump recipes on disk now !
-    if not cached_extracted_recipes.exists() :
-        cached_extracted_recipes.mkdir(parents=True)
+    if not cached_recipes_dir.exists() :
+        cached_recipes_dir.mkdir(parents=True)
 
     logger.log("Dumping extracted recipes on disk now !")
     for recipe in recipes_list :
         logger.log("Dumping recipe {}, number {}".format(recipe.name, recipe.number))
         filename = "recipe_{}.json".format(recipe.number)
-        filepath = cached_extracted_recipes.joinpath(filename)
+        filepath = cached_recipes_dir.joinpath(filename)
         with open(filepath, "w") as file :
             json.dump(recipe.to_json(), file, indent=4)
 
@@ -1350,7 +1368,7 @@ def main(args) :
         json_data = []
         for recipe in recipes_list :
             json_data.append(recipe.to_json())
-        filepath = cached_extracted_recipes.joinpath("all_recipes.json")
+        filepath = cached_recipes_dir.joinpath("all_recipes.json")
         with open(filepath, "w") as file :
             json.dump({"recipes" : json_data}, file, indent=4)
 

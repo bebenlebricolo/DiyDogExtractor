@@ -308,7 +308,7 @@ class Packaging(Jsonable) :
 @dataclass
 class Recipe(Jsonable) :
     image : JsonProperty[Record]                    # Ref to file with image
-    original_pdf_page : JsonProperty[Record]        # Ref to original pdf page extracted from DiyDog book
+    pdf_page : JsonProperty[Record]        # Ref to original pdf page extracted from DiyDog book
 
     name : str          # Beer title
     subtitle : str      # Beer subtitle, contains tags and other information
@@ -369,7 +369,7 @@ class Recipe(Jsonable) :
                         parsing_errors = None,
                         food_pairing = None) :
         self.image = JsonProperty('image', FileRecord())
-        self.original_pdf_page = JsonProperty('originalPdfPage', FileRecord())
+        self.pdf_page = JsonProperty('pdfPage', FileRecord())
         self.name = name or ""
         self.subtitle = subtitle or ""
         self.number = number or 0
@@ -395,7 +395,7 @@ class Recipe(Jsonable) :
             "tags" : self.tags,
             "firstBrewed" : self.first_brewed,
             self.image._prop_key : self.image.value.to_json(),
-            self.original_pdf_page._prop_key : self.original_pdf_page.value.to_json(),
+            self.pdf_page._prop_key : self.pdf_page.value.to_json(),
             "description" : self.description.to_json(),
             "basics" : self.basics.to_json(),
             "foodPairing" : self.food_pairing.to_json() if self.food_pairing else None,
@@ -423,10 +423,10 @@ class Recipe(Jsonable) :
             parsed_record = RecordBuilder.from_json(image_node)
             self.image.value = parsed_record or self.image.value
 
-        orig_pdf_node = self.original_pdf_page.get_node(content)
+        orig_pdf_node = self.pdf_page.get_node(content)
         if orig_pdf_node :
             parsed_record = RecordBuilder.from_json(orig_pdf_node)
-            self.original_pdf_page.value = parsed_record or self.original_pdf_page.value
+            self.pdf_page.value = parsed_record or self.pdf_page.value
 
         if "description" in content :
             self.description.from_json(content["description"])
@@ -461,7 +461,7 @@ class Recipe(Jsonable) :
             return False
         identical = True
         identical &= self.image ==  other.image                         #type: ignore
-        identical &= self.original_pdf_page == other.original_pdf_page  #type: ignore
+        identical &= self.pdf_page == other.pdf_page                    #type: ignore
         identical &= self.name == other.name                            #type: ignore
         identical &= self.subtitle == other.subtitle                    #type: ignore
         identical &= self.number == other.number                        #type: ignore

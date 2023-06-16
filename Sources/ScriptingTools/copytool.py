@@ -2,12 +2,12 @@ from pathlib import Path
 import shutil
 import sys
 import argparse
-from ..Utils.filesystem import list_files, ensure_folder_exist
+from ..Utils.filesystem import list_files_pattern, ensure_folder_exist
 
 # Simple tool to move data around, useful when developing.
 
 def copy_extracted_silhouettes_to_folder(root_cache_dir : Path, output_dir : Path) :
-    file_list = list_files(root_cache_dir, "extracted_silhouette", extension=".png")
+    file_list = list_files_pattern(root_cache_dir, "extracted_silhouette", extension=".png")
 
     ensure_folder_exist(output_dir)
     for file in file_list :

@@ -230,7 +230,7 @@ class TestRecipeModels(unittest.TestCase) :
         recipe.image.value = FileRecord("Somewhere on this computer")
         recipe.name = "Fake beer name"
         recipe.number = 123
-        recipe.original_pdf_page.value = FileRecord("somewhere ELSE on this computer")
+        recipe.pdf_page.value = FileRecord("somewhere ELSE on this computer")
         recipe.packaging = self.get_fake_Packaging()
         recipe.page_number = 321
         recipe.tags = [
