@@ -12,8 +12,13 @@ If this approach works fine, then we'll be able to parse further revisions of th
 For this toolset to work, you'll need to install the requirements as per depicted in the [requirements.txt](Sources/requirements.txt) file.
 
 Be sure you are running a **recent python** version (>= python 3.10) and have a **pypi** installation up and running.
-
 Then, run the following commands in a shell :
+
+>Note : I'd recommend running this in a venv, as on some linux distributions installing custom python packages messes up with the system's dependencies.
+```bash
+python -m venv <your directory>
+./<bin somewhere in the venv>/activate # <- Hurray, you're in!
+```
 
 ```bash
 pip install -r requirements.txt
@@ -35,3 +40,15 @@ For now, the parsed recipes are stored in the form of json files within the ***.
 They are produced by serializing the **Recipe** class, found in the [recipe.py](Sources/Models/recipe.py) file and contain all parsed data (except images and pdf pages which are registered under the form of filepath in the json file ; they are indirect object references).
 They can be used as-is, despite being quite low-level, or they can be used throughout more evolved services (such as a web service / Rest Api)
 
+## Patch the output dataset
+Almost 100% of the dataset is clean, but out the 415 recipes, 3 remain hard to automatically parse (especially the hop section and the mash temperatures).
+Some minor issues might still remain, but 3 patches are provided under the folder [Patches](Patches).
+Those patches need to be applied using a tool which is located within the [Sources/ScriptingTools](Sources/ScriptingTools/) folder, called [Sources/ScriptingTools/patcher.py](Sources/ScriptingTools/patcher.py)
+
+Usage :
+```bash
+cd DiydogExtractor # Repo's root folder
+python -m Sources.ScriptingTools.patcher Patches Sources/.cache/deployed/recipes
+```
+
+It automatically handles recipes patching for you and normally you end up with a 100% processed datasets with all values up-to-date !
