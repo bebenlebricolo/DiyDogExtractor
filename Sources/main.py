@@ -8,6 +8,7 @@ import json
 from pathlib import Path
 import argparse
 from enum import Enum
+import shutil
 
 
 from copy import copy
@@ -28,7 +29,7 @@ from .Models import recipe as rcp
 from .Models import record as rec
 from .Utils import image as utim
 
-from .Utils.filesystem import ensure_folder_exist, list_pages_with_number, list_files_pattern
+from .Utils.filesystem import ensure_folder_exist, list_all_files, list_pages_with_number, list_files_pattern
 C_DIYDOG_URL = "https://brewdogmedia.s3.eu-west-2.amazonaws.com/docs/2019+DIY+DOG+-+V8.pdf"
 
 GRAMS_PATTERN = re.compile(r"([0-9]+\.?[0-9]*) *([k]?[g])")
@@ -1129,39 +1130,40 @@ def extract_recipe(page : PageBlocks) -> rcp.Recipe :
     out = extract_body(body_elements, out)
     return out
 
-def hook_pdf_and_extracted_image_to_recipe(recipe : rcp.Recipe,
-                                           recipe_out_dir : Path,
-                                           cached_images_directory : Path,
-                                           cached_pdf_pages_directory : Path,
-                                           image_name : str ,
-                                           relative_path_mode = True):
+def hook_pdf_and_extracted_image_to_recipe(recipe : rcp.Recipe):
     """Function used to hook up the pdf pages and extracted images to the final recipe.
-       It uses both absolute path resolution or relative (does not check that the file exist though)
+       It uses relative path mode, relative to the recipes folder (the recipe starts processing path from where it stands)
     """
 
-    page_image_dir = cached_images_directory.joinpath(f"page_{recipe.page_number}")
-    extracted_image_file = page_image_dir.joinpath(image_name)
-
-    if relative_path_mode :
-        base_filename = f"beer_{recipe.number}"
-        relative_image_filepath = recipe_out_dir.joinpath(f"{base_filename}")
-        relative_pdf_page_filepath = recipe_out_dir.joinpath(f"pdf_pages/{base_filename}.pdf")
-        recipe.image.value = rec.FileRecord(f"{relative_image_filepath}")
-        recipe.pdf_page.value = rec.FileRecord(f"{relative_pdf_page_filepath}")
-
-    else :
-        # Hook up extracted image
-        relative_image_filepath = recipe_out_dir.joinpath(f"images/{image_name}")
-        recipe.image.value = rec.FileRecord(extracted_image_file.as_posix())
-        pdf_page_file = cached_pdf_pages_directory.joinpath(f"page_{recipe.number}.pdf")
-        recipe.pdf_page.value = rec.FileRecord(pdf_page_file.as_posix())
+    base_filename = f"beer_{recipe.number}"
+    relative_image_filepath = f"../images/{base_filename}.png"
+    relative_pdf_page_filepath = f"../pdf_pages/{base_filename}.pdf"
+    recipe.image.value = rec.FileRecord(relative_image_filepath)
+    recipe.pdf_page.value = rec.FileRecord(relative_pdf_page_filepath)
 
 
-def deploy_to_directory(deploy_dir : Path, cached_recipes_dir : Path, cached_images_dir : Path, cached_pdf_pages_dir : Path) :
-    ensure_folder_exist(deploy_dir)
+def copy_files_to(filelist : list[Path], dest_dir : Path) :
+    for file in filelist :
+        shutil.copy(file, dest_dir)
 
-    #list_files_pattern(cached_recipes_dir, "recipe)
+def deploy_to_directory(cached_recipes_dir : Path,
+                        cached_images_dir : Path,
+                        cached_pdf_pages_dir : Path,
+                        dep_recipes_dir : Path,
+                        dep_pdf_pages_dir : Path,
+                        dep_images_dir : Path) :
+    recipe_filelist = list_all_files(cached_recipes_dir)
+    extracted_images_list = list_files_pattern(cached_images_dir, "extracted_silhouette")
+    pdf_pages_list = list_files_pattern(cached_pdf_pages_dir, "page", ".pdf")
 
+    copy_files_to(recipe_filelist, dep_recipes_dir)
+    copy_files_to(pdf_pages_list, dep_pdf_pages_dir)
+
+    # A bit of renaming for the images
+    for image in extracted_images_list :
+        page_number = int(image.parent.name.lstrip("page_"))
+        image_name = f"beer_{page_number}.png"
+        shutil.copyfile(image, dep_images_dir.joinpath(image_name))
 
 
 def main(args) :
@@ -1349,7 +1351,7 @@ def main(args) :
 
     # Hook pdf pages and extracted images / thumbnails to recipes
     for recipe in recipes_list :
-        hook_pdf_and_extracted_image_to_recipe(recipe, cached_recipes_dir,  cached_images_dir, cached_pdf_pages_dir, "extracted_silhouette.png")
+        hook_pdf_and_extracted_image_to_recipe(recipe)
 
     # Dump recipes on disk now !
     if not cached_recipes_dir.exists() :
@@ -1371,6 +1373,21 @@ def main(args) :
         filepath = cached_recipes_dir.joinpath("all_recipes.json")
         with open(filepath, "w") as file :
             json.dump({"recipes" : json_data}, file, indent=4)
+
+
+    # Configuring deployment directory
+    deploy_dir = CACHE_DIRECTORY.joinpath("deployed")
+    dep_images_dir = deploy_dir.joinpath("images")
+    dep_recipes_dir = deploy_dir.joinpath("recipes")
+    dep_pdf_pages_dir = deploy_dir.joinpath("pdf_pages")
+
+    ensure_folder_exist(dep_images_dir)
+    ensure_folder_exist(dep_recipes_dir)
+    ensure_folder_exist(dep_pdf_pages_dir)
+    ensure_folder_exist(deploy_dir)
+
+    logger.log(f"Deploying output data to deploy directory : {deploy_dir}")
+    deploy_to_directory(cached_recipes_dir, cached_images_dir, cached_pdf_pages_dir, dep_recipes_dir, dep_pdf_pages_dir, dep_images_dir)
 
 
     logger.log("Done !")
