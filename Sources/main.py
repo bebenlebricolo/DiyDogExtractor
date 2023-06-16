@@ -96,9 +96,11 @@ def cache_pdf_contents(filepath : Path, page : PageObject) :
         raise Exception("Content is missing from page document")
 
 
-def cache_images(directory : Path, page_file : Path, beer_number = 0) :
+def cache_images(directory : Path, page_file : Path, beer_number = 0) -> rcp.PackagingType:
     if not directory.exists() :
         directory.mkdir(parents=True)
+
+    most_probable_packaging = rcp.PackagingType.Bottle
 
     try :
         document = fitz.Document(page_file) # type: ignore
@@ -122,6 +124,7 @@ def cache_images(directory : Path, page_file : Path, beer_number = 0) :
     except Exception as e :
         logger.log("Caught error while caching images for page {}".format(directory.name))
         logger.log(e.__repr__())
+    return most_probable_packaging
 
 
 def extract_raw_text_blocks_from_content(contents : str) -> list[list[str]] :
@@ -677,6 +680,9 @@ def parse_method_timings_category(elements : list[TextElement], recipe : rcp.Rec
         flattened_row = concatenate_columns(columns)
         flattened_row.sort(key=lambda x : x.x)
 
+        error_on_celsius = False
+        error_on_farenheit = False
+
         if len(flattened_row) == 1 :
             method_timings.mash_tips.append(flattened_row[0].text)
         else :
@@ -701,9 +707,10 @@ def parse_method_timings_category(elements : list[TextElement], recipe : rcp.Rec
                     mash_temp.celsius = float(matches[0])
                 else :
                     logger.log("/!\\ Caught weird looking patterns for Celsius degrees for beer {} when parsing mash temps data : {}".format(recipe.number, flattened_row[0].text))
-
+                    error_on_celsius = True
                 if recipe.number == 220 :
                     pass
+
 
                 # Repeat for Fahrenheit degrees from mash temp
                 matches = DEGREES_PATTERN.findall(flattened_row[1].text)
@@ -711,6 +718,7 @@ def parse_method_timings_category(elements : list[TextElement], recipe : rcp.Rec
                     mash_temp.fahrenheit = float(matches[0])
                 else :
                     logger.log("/!\\ Caught weird looking patterns for Fahrenheit degrees for beer {} when parsing mash temps data : {}".format(recipe.number, flattened_row[1].text))
+                    error_on_farenheit = True
 
                 # Not all beers have timing data for mash temperatures
                 if len(flattened_row) == 3 :
@@ -719,6 +727,15 @@ def parse_method_timings_category(elements : list[TextElement], recipe : rcp.Rec
                         mash_temp.time = float(matches[0])
                     else :
                         logger.log("/!\\ Caught weird looking patterns for timing for beer {} when parsing mash temps data : {}".format(recipe.number, flattened_row[2].text))
+
+            # Trying to bit a little bit more resilient on temp readings, if one managed to go through!
+            if error_on_celsius and not error_on_farenheit :
+                logger.log("-> Recomposing missing celsius temperature using farenheit value")
+                mash_temp.celsius = fahrenheit_to_celsius(mash_temp.fahrenheit)
+            elif error_on_farenheit and not error_on_celsius :
+                logger.log("-> Recomposing missing farenheit temperature using celsius value")
+                mash_temp.fahrenheit = celsius_to_fahrenheit(mash_temp.celsius)
+
 
             method_timings.mash_temps.append(mash_temp)
 
@@ -980,10 +997,10 @@ def parse_brewers_tip_category(elements : list[TextElement], recipe : rcp.Recipe
     return recipe
 
 def parse_packaging_category(elements : list[TextElement], recipe : rcp.Recipe) -> rcp.Recipe :
-    # TODO : find packaging based on image aspect ratio and / or the sometimes mentioned 'keg only'
-    packaging = rcp.Packaging()
+    # packaging is parsed using aspect ratio when extracting the images
+    packaging = rcp.PackagingType.Bottle
     if find_element(elements, "KEG ONLY") :
-        packaging.type = rcp.PackagingType.Keg
+        packaging = rcp.PackagingType.Keg
 
     recipe.packaging = packaging
     return recipe
@@ -1292,8 +1309,13 @@ def main(args) :
     logger.log("Listing available pages images and extracted images...")
     images_list = list_files_pattern(cached_images_dir, "extracted_silhouette", ".png")
 
+
+    packaging_type_beer_number_map : list[tuple[int, rcp.PackagingType]] = []
+    if len(images_list) < 100 and skip_image_extraction:
+        skip_image_extraction = False
+
     # Extracting pdf rendered images !
-    if skip_image_extraction == False and len(images_list) < 100 :
+    if skip_image_extraction == False :
         logger.log("Found few {} pages images in {}. Triggering image extraction again.".format(len(images_list), cached_pdf_pages_dir))
         logger.log("Caching images to disk ...")
 
@@ -1307,9 +1329,14 @@ def main(args) :
             #if page[0] not in candidates :
             #    continue
 
-            page_images_dir = cached_images_dir.joinpath(page[1].stem)
-            logger.log("Caching images for page {}".format(page[1].stem))
-            cache_images(page_images_dir, page[1], page[0])
+            page_number = page[0]
+            page_filepath = page[1]
+
+            page_images_dir = cached_images_dir.joinpath(page_filepath.stem)
+            logger.log("Caching images for page {}".format(page_filepath.stem))
+            most_probable_packaging_type = cache_images(page_images_dir, page_filepath, page_number)
+            packaging_type_beer_number_map.append((page_number, most_probable_packaging_type))
+
     else :
         logger.log("-> OK : Found {} pages images in {}".format(len(images_list), cached_pdf_pages_dir))
         logger.log("Image extraction step skipped.")
@@ -1352,6 +1379,11 @@ def main(args) :
     # Hook pdf pages and extracted images / thumbnails to recipes
     for recipe in recipes_list :
         hook_pdf_and_extracted_image_to_recipe(recipe)
+
+        # Should be correctly indexed at this stage
+        if not skip_image_extraction :
+            recipe.packaging = packaging_type_beer_number_map[recipe.number - 1][1]
+        #recipe.packaging = [x[1] for x in packaging_type_beer_number_map if x[0] == recipe.number][0]
 
     # Dump recipes on disk now !
     if not cached_recipes_dir.exists() :

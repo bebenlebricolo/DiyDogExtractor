@@ -93,8 +93,8 @@ class TestRecipeModels(unittest.TestCase) :
 
         return method_timings
 
-    def get_fake_Packaging(self) -> Packaging :
-        return Packaging(PackagingType.Bottle)
+    def get_fake_Packaging(self) -> PackagingType :
+        return PackagingType.Bottle
 
     def test_Description_json_symmetry(self) :
         description = self.get_fake_description()
@@ -210,14 +210,6 @@ class TestRecipeModels(unittest.TestCase) :
         parsed = MethodTimings()
         parsed.from_json(data)
         self.assertEqual(method_timings, parsed)
-
-    def test_Packaging_json_symmetry(self) :
-        packaging = self.get_fake_Packaging()
-
-        data = packaging.to_json()
-        parsed = Packaging()
-        parsed.from_json(data)
-        self.assertEqual(packaging, parsed)
 
     def test_Recipe_json_symmetry(self) :
         recipe = Recipe()

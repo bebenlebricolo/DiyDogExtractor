@@ -300,12 +300,6 @@ class PackagingType(Enum) :
     Can = "Can"
 
 @dataclass
-class Packaging(Jsonable) :
-    # Enums are not considered as mutable dataclasses, so plain initialization like this one works out of the box
-    # Otherwise we can't get this to work with regular @dataclass and field(default_factory=...) for `PackagingType` object.
-    type : PackagingType = PackagingType.Bottle
-
-@dataclass
 class Recipe(Jsonable) :
     image : JsonProperty[Record]                    # Ref to file with image
     pdf_page : JsonProperty[Record]        # Ref to original pdf page extracted from DiyDog book
@@ -323,7 +317,7 @@ class Recipe(Jsonable) :
     ingredients : Ingredients = field(default_factory=Ingredients)
     brewers_tip : BrewersTip = field(default_factory=BrewersTip)
     method_timings : MethodTimings = field(default_factory=MethodTimings)
-    packaging : Packaging = field(default_factory=Packaging)
+    packaging : PackagingType = PackagingType.Bottle
 
     # Some beers have parsing errors along the way, so list some potential issues here and let the end user check the pdf instead
     parsing_errors : Optional[list[str]] = None
@@ -381,7 +375,7 @@ class Recipe(Jsonable) :
         self.ingredients = ingredients or Ingredients()
         self.brewers_tip = brewers_tip or BrewersTip()
         self.method_timings = method_timings or MethodTimings()
-        self.packaging = packaging or Packaging()
+        self.packaging = packaging or PackagingType.Bottle
         self.parsing_errors = parsing_errors
         self.food_pairing = food_pairing
 
@@ -402,7 +396,7 @@ class Recipe(Jsonable) :
             "ingredients" : self.ingredients.to_json(),
             "brewersTip" : self.brewers_tip.to_json(),
             "methodTimings" : self.method_timings.to_json(),
-            "packaging" : self.packaging.to_json(),
+            "packaging" : self.packaging.value,
             "parsingErrors" : self.parsing_errors
         }
 
@@ -442,7 +436,7 @@ class Recipe(Jsonable) :
         if "methodTimings" in content :
             self.method_timings.from_json(content["methodTimings"])
         if "packaging" in content :
-            self.packaging.from_json(content["packaging"])
+            self.packaging = PackagingType[(content["packaging"])]
 
         if "parsingErrors" in content and content["parsingErrors"] is not None:
             self.parsing_errors = []

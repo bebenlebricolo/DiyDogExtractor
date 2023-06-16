@@ -1,0 +1,137 @@
+{
+    "name": "HELLO MY NAME IS NIAMH",
+    "subtitle": "",
+    "number": 290,
+    "pageNumber": 290,
+    "tags": [
+        "ELDERFLOWER INFUSED DOUBLE IPA"
+    ],
+    "firstBrewed": "2017",
+    "image": {
+        "kind": "FileSource",
+        "path": "../images/beer_290.png"
+    },
+    "pdfPage": {
+        "kind": "FileSource",
+        "path": "../pdf_pages/beer_290.pdf"
+    },
+    "description": {
+        "text": "Brewed exclusively for the Irish market, this Hello My Name brew features a twist of flavour inspired by Ireland."
+    },
+    "basics": {
+        "volume": {
+            "litres": 20.0,
+            "galons": 5.0
+        },
+        "boilVolume": {
+            "litres": 25.0,
+            "galons": 6.6
+        },
+        "abv": 8.2,
+        "targetOg": 1070.0,
+        "targetFg": 1009.0,
+        "ebc": 15.0,
+        "ibu": 70.0,
+        "srm": 8.0,
+        "ph": 4.4,
+        "attenuationLevel": 87.0
+    },
+    "foodPairing": {
+        "pairings": [
+            "Grilled sea bass fillet",
+            "Sushi maki",
+            "Summer fruit pudding"
+        ]
+    },
+    "ingredients": {
+        "malts": [
+            {
+                "name": "Pale Ale",
+                "kgs": 5.52,
+                "lbs": 12.1
+            },
+            {
+                "name": "Caramalt",
+                "kgs": 0.12,
+                "lbs": 0.3
+            }
+        ],
+        "hops": [
+            {
+                "name": "Simcoe",
+                "amount": 24.0,
+                "when": "90",
+                "attribute": "Bittering"
+            },
+            {
+                "name": "Chinook",
+                "amount": 20.0,
+                "when": "30",
+                "attribute": "Flavour"
+            },
+            {
+                "name": "Simcoe",
+                "amount": 30.0,
+                "when": "0",
+                "attribute": "Aroma"
+            },
+            {
+                "name": "Citra",
+                "amount": 40.0,
+                "when": "Dry Hop",
+                "attribute": "Aroma"
+            },
+            {
+                "name": "Chinook",
+                "amount": 40.0,
+                "when": "Dry Hop",
+                "attribute": "Aroma"
+            },
+            {
+                "name": "Centennial",
+                "amount": 20.0,
+                "when": "Dry Hop",
+                "attribute": "Aroma"
+            },
+            {
+                "name": "Simcoe",
+                "amount": 40.0,
+                "when": "Dry Hop",
+                "attribute": "Aroma"
+            }
+        ],
+        "yeasts": [
+            {
+                "name": "Wyeast 1272 American Ale II"
+            }
+        ],
+        "alternativeDescription": null
+    },
+    "brewersTip": {
+        "text": "Save yourself a lot of hassle and buy the Elderflower as a concentrate or cordial. Collecting elderberries ranks low on the FPES (fruit picking enjoyment scale), can't imagine the flower picking is much better."
+    },
+    "methodTimings": {
+        "mashTemps": [
+            {
+                "celsius": 66.0,
+                "fahrenheit": 151.0,
+                "time": 65.0
+            }
+        ],
+        "mashTips": [],
+        "fermentation": {
+            "celsius": 19.0,
+            "fahrenheit": 19.0,
+            "tips": []
+        },
+        "twists": [
+            {
+                "name": "Elderflower Concentrate",
+                "amount": 500.0,
+                "when": null
+            }
+        ]
+    },
+    "packaging": "Bottle",
+    "parsingErrors": null
+}

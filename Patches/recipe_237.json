@@ -1,0 +1,156 @@
+{
+    "name": "MANGO AND CHILI BARLEY WINE",
+    "subtitle": "",
+    "number": 237,
+    "pageNumber": 237,
+    "tags": [
+        "SPICY, CHEWY, SWEET"
+    ],
+    "firstBrewed": "2016",
+    "image": {
+        "kind": "FileSource",
+        "path": "../images/beer_237.png"
+    },
+    "pdfPage": {
+        "kind": "FileSource",
+        "path": "../pdf_pages/beer_237.pdf"
+    },
+    "description": {
+        "text": "A huge, chewy barley wine, loaded with bitterness and balanced with a sweet and spicy combo of mango and chili. A concept brew which was so well received, we tweaked it and it became Neon Overlord."
+    },
+    "basics": {
+        "volume": {
+            "litres": 20.0,
+            "galons": 5.0
+        },
+        "boilVolume": {
+            "litres": 25.0,
+            "galons": 6.6
+        },
+        "abv": 12.0,
+        "targetOg": 1110.0,
+        "targetFg": 1015.0,
+        "ebc": 20.0,
+        "ibu": 50.0,
+        "srm": 40.0,
+        "ph": 4.4,
+        "attenuationLevel": 84.0
+    },
+    "foodPairing": {
+        "pairings": [
+            "Vegetable Samosas",
+            "Thai Green Chicken Curry",
+            "Vanilla Panna Cotta"
+        ]
+    },
+    "ingredients": {
+        "malts": [
+            {
+                "name": "Marris Otter",
+                "kgs": 7.0,
+                "lbs": 15.4
+            }
+        ],
+        "hops": [
+            {
+                "name": "Centennial",
+                "amount": 5.0,
+                "when": "90",
+                "attribute": "Bitter"
+            },
+            {
+                "name": "Centennial",
+                "amount": 1.0,
+                "when": "15",
+                "attribute": "Flavour"
+            },
+            {
+                "name": "Columbus",
+                "amount": 1.0,
+                "when": "15",
+                "attribute": "Flavour"
+            },
+            {
+                "name": "Mosaic",
+                "amount": 3.0,
+                "when": "Whirlpool",
+                "attribute": "Aroma"
+            },
+            {
+                "name": "Citra",
+                "amount": 2.0,
+                "when": "Whirlpool",
+                "attribute": "Aroma"
+            },
+            {
+                "name": "Coriander Seed",
+                "amount": 4.0,
+                "when": "Whirlpool",
+                "attribute": "Aroma"
+            },
+            {
+                "name": "Mango",
+                "amount": 500.0,
+                "when": "Secondary",
+                "attribute": "Flavour"
+            },
+            {
+                "name": "1 lemon drop chili",
+                "amount": -1.0,
+                "when": "Maturation",
+                "attribute": "Flavour"
+            }
+        ],
+        "yeasts": [
+            {
+                "name": "Wyeast 1272 - American Ale II\u0099"
+            }
+        ],
+        "alternativeDescription": null
+    },
+    "brewersTip": {
+        "text": "Crack open the chili and add it in a muslin bag so you can take it out when the chilli heat suits you."
+    },
+    "methodTimings": {
+        "mashTemps": [
+            {
+                "celsius": 60.0,
+                "fahrenheit": 140.0,
+                "time": 30.0
+            },
+            {
+                "celsius": 65.0,
+                "fahrenheit": 149.0,
+                "time": 20.0
+            },
+            {
+                "celsius": 72.0,
+                "fahrenheit": 162.0,
+                "time": 15.0
+            },
+            {
+                "celsius": 78.0,
+                "fahrenheit": 172.0,
+                "time": 10.0
+            }
+        ],
+        "mashTips": [],
+        "fermentation": {
+            "celsius": 21.0,
+            "fahrenheit": 21.0,
+            "tips": []
+        },
+        "twists": null
+    },
+    "packaging": "Keg",
+    "parsingErrors": [
+        "Had some issues when reading hop : guessed name : Mosaic . Reason : '('Error, incorrect amount',)'. Use the pdf page for reference !",
+        "Had some issues when reading hop : guessed name : Whirlpool . Reason : '('Error, incorrect amount',)'. Use the pdf page for reference !",
+        "Had some issues when reading hop : guessed name : Citra . Reason : '('Error, incorrect amount',)'. Use the pdf page for reference !",
+        "Had some issues when reading hop : guessed name : Whirlpool . Reason : '('Error, incorrect amount',)'. Use the pdf page for reference !",
+        "Had some issues when reading hop : guessed name : Whirlpool . Reason : '('Error, incorrect amount',)'. Use the pdf page for reference !",
+        "Had some issues when reading hop : guessed name : Mango . Reason : '('Error, incorrect amount',)'. Use the pdf page for reference !",
+        "Had some issues when reading hop : guessed name : Secondary . Reason : '('Error, incorrect amount',)'. Use the pdf page for reference !",
+        "Had some issues when reading hop : guessed name : Maturation . Reason : '('Error, incorrect amount',)'. Use the pdf page for reference !"
+    ]
+}

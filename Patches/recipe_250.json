@@ -1,0 +1,153 @@
+{
+    "name": "RYE IPA SMALL BATCH",
+    "subtitle": "",
+    "number": 250,
+    "pageNumber": 250,
+    "tags": [
+        "RYE INDIA PALE ALE"
+    ],
+    "firstBrewed": "2016",
+    "image": {
+        "kind": "FileSource",
+        "path": "../images/beer_250.png"
+    },
+    "pdfPage": {
+        "kind": "FileSource",
+        "path": "../pdf_pages/beer_250.pdf"
+    },
+    "description": {
+        "text": "A 7.2% rye IPA loaded with grapefruit notes, pithy citrus, and huge resinous bitterness, with rye character. The Centennial and Columbus flavours are amplified by the spicy, dry rye."
+    },
+    "basics": {
+        "volume": {
+            "litres": 20.0,
+            "galons": 5.0
+        },
+        "boilVolume": {
+            "litres": 25.0,
+            "galons": 6.6
+        },
+        "abv": 7.2,
+        "targetOg": 1065.0,
+        "targetFg": 1010.0,
+        "ebc": 8.0,
+        "ibu": 100.0,
+        "srm": 16.0,
+        "ph": 4.4,
+        "attenuationLevel": 84.0
+    },
+    "foodPairing": {
+        "pairings": [
+            "Salmon Fishcakes with Rocket Salad",
+            "Baked Goat's Cheese",
+            "Classic Victoria Sponge"
+        ]
+    },
+    "ingredients": {
+        "malts": [
+            {
+                "name": "Marris Otter",
+                "kgs": 4.0,
+                "lbs": 8.8
+            },
+            {
+                "name": "Rye",
+                "kgs": 0.8,
+                "lbs": 1.8
+            }
+        ],
+        "hops": [
+            {
+                "name": "Centennial",
+                "amount": 40.0,
+                "when": "60",
+                "attribute": "Bitter"
+            },
+            {
+                "name": "Centennial",
+                "amount": 15.0,
+                "when": "15",
+                "attribute": "Bitter"
+            },
+            {
+                "name": "Columbus",
+                "amount": 15.0,
+                "when": "15",
+                "attribute": "Flavour"
+            },
+            {
+                "name": "Centennial",
+                "amount": 50.0,
+                "when": "Whirlpool",
+                "attribute": "Aroma"
+            },
+            {
+                "name": "Columbus",
+                "amount": 25.0,
+                "when": "Whirlpool",
+                "attribute": "Aroma"
+            },
+            {
+                "name": "Columbus",
+                "amount": 10.0,
+                "when": "Dry Hop",
+                "attribute": "Aroma"
+            },
+            {
+                "name": "Citra",
+                "amount": 10.0,
+                "when": "Dry Hop",
+                "attribute": "Aroma"
+            }
+        ],
+        "yeasts": [
+            {
+                "name": "Wyeast 1272 - American Ale II\u0099"
+            }
+        ],
+        "alternativeDescription": null
+    },
+    "brewersTip": {
+        "text": "Be prepared for a long sparge as the rye content is really high."
+    },
+    "methodTimings": {
+        "mashTemps": [
+            {
+                "celsius": 60.0,
+                "fahrenheit": 140.0,
+                "time": 30.0
+            },
+            {
+                "celsius": 65.0,
+                "fahrenheit": 149.0,
+                "time": 20.0
+            },
+            {
+                "celsius": 72.0,
+                "fahrenheit": 162.0,
+                "time": 15.0
+            },
+            {
+                "celsius": 78.0,
+                "fahrenheit": 172.0,
+                "time": 10.0
+            }
+        ],
+        "mashTips": [],
+        "fermentation": {
+            "celsius": 21.0,
+            "fahrenheit": 21.0,
+            "tips": []
+        },
+        "twists": null
+    },
+    "packaging": "Keg",
+    "parsingErrors": [
+        "Had some issues when reading hop : guessed name : Centennial . Reason : '('Error, incorrect amount',)'. Use the pdf page for reference !",
+        "Had some issues when reading hop : guessed name : Whirlpool . Reason : '('Error, incorrect amount',)'. Use the pdf page for reference !",
+        "Had some issues when reading hop : guessed name : Columbus . Reason : '('Error, incorrect amount',)'. Use the pdf page for reference !",
+        "Had some issues when reading hop : guessed name : Whirlpool . Reason : '('Error, incorrect amount',)'. Use the pdf page for reference !",
+        "Had some issues when reading hop : guessed name : Columbus . Reason : '('Error, incorrect amount',)'. Use the pdf page for reference !",
+        "Had some issues when reading hop : guessed name : Citra . Reason : '('Error, incorrect amount',)'. Use the pdf page for reference !"
+    ]
+}
