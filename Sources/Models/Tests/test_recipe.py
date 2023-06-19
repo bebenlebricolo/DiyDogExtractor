@@ -4,8 +4,8 @@ import json
 
 class TestRecipeModels(unittest.TestCase) :
 
-    def get_fake_description(self) -> Description :
-        return Description(text="This is a test description")
+    def get_fake_description(self) -> str :
+        return "This is a test description"
 
     def get_fake_Volume(self) -> Volume :
         return Volume(20.0, 5.0)
@@ -26,15 +26,12 @@ class TestRecipeModels(unittest.TestCase) :
 
         return basics
 
-    def get_fake_FoodPairing(self) -> FoodPairing :
-        pairing = FoodPairing()
-        pairing.pairings = [
+    def get_fake_FoodPairing(self) -> list[str] :
+        return [
             "pairing 1",
             "pairing 2",
             "pairing 3"
         ]
-
-        return pairing
 
     def get_fake_Malt(self) -> Malt :
         return Malt(name="test malt", kgs=1.2, lbs= 2.3)
@@ -66,8 +63,8 @@ class TestRecipeModels(unittest.TestCase) :
 
         return ingredients
 
-    def get_fake_BrewersTip(self) -> BrewersTip :
-        return BrewersTip("fake brewer's tip")
+    def get_fake_BrewersTip(self) -> str :
+        return "fake brewer's tip"
 
     def get_fake_Temperature(self) -> Temperature :
         return Temperature(celsius=12.0, fahrenheit=33.2)
@@ -96,13 +93,6 @@ class TestRecipeModels(unittest.TestCase) :
     def get_fake_Packaging(self) -> PackagingType :
         return PackagingType.Bottle
 
-    def test_Description_json_symmetry(self) :
-        description = self.get_fake_description()
-        data = description.to_json()
-        parsed = Description()
-        parsed.from_json(data)
-        self.assertEqual(description, parsed)
-
     def test_Volume_json_symmetry(self) :
         volume = self.get_fake_Volume()
         data = volume.to_json()
@@ -117,14 +107,6 @@ class TestRecipeModels(unittest.TestCase) :
         parsed = Basics()
         parsed.from_json(data)
         self.assertEqual(basics, parsed)
-
-    def test_FoodPairing_json_symmetry(self) :
-        pairing = self.get_fake_FoodPairing()
-
-        data = pairing.to_json()
-        parsed = FoodPairing()
-        parsed.from_json(data)
-        self.assertEqual(pairing, parsed)
 
     def test_Malt_json_symmetry(self) :
         malt = self.get_fake_Malt()
@@ -157,14 +139,6 @@ class TestRecipeModels(unittest.TestCase) :
         parsed = Ingredients()
         parsed.from_json(data)
         self.assertEqual(ingredients, parsed)
-
-    def test_BrewersTip_json_symmetry(self) :
-        brewers_tip = self.get_fake_BrewersTip()
-
-        data = brewers_tip.to_json()
-        parsed = BrewersTip()
-        parsed.from_json(data)
-        self.assertEqual(brewers_tip, parsed)
 
     def test_Temperature_json_symmetry(self) :
         temperature = self.get_fake_Temperature()
@@ -213,19 +187,18 @@ class TestRecipeModels(unittest.TestCase) :
 
     def test_Recipe_json_symmetry(self) :
         recipe = Recipe()
-        recipe.basics = self.get_fake_Basics()
-        recipe.brewers_tip = self.get_fake_BrewersTip()
-        recipe.description = self.get_fake_description()
-        recipe.first_brewed = "I don't know !"
-        recipe.food_pairing = self.get_fake_FoodPairing()
-        recipe.ingredients = self.get_fake_Ingredients()
+        recipe.basics.value = self.get_fake_Basics()
+        recipe.brewers_tip.value = self.get_fake_BrewersTip()
+        recipe.description.value = self.get_fake_description()
+        recipe.first_brewed.value = "I don't know !"
+        recipe.food_pairing.value = self.get_fake_FoodPairing()
+        recipe.ingredients.value = self.get_fake_Ingredients()
         recipe.image.value = FileRecord("Somewhere on this computer")
-        recipe.name = "Fake beer name"
-        recipe.number = 123
+        recipe.name.value = "Fake beer name"
+        recipe.number.value = 123
         recipe.pdf_page.value = FileRecord("somewhere ELSE on this computer")
-        recipe.packaging = self.get_fake_Packaging()
-        recipe.page_number = 321
-        recipe.tags = [
+        recipe.packaging.value = self.get_fake_Packaging()
+        recipe.tags.value = [
             "tag 1",
             "tag 2",
             "tag 3",
@@ -240,9 +213,10 @@ class TestRecipeModels(unittest.TestCase) :
     def test_multiple_recipes_instantiation_and_isolation(self) :
         """This test tries to instantiate many recipes in a row, and none of them should be equal."""
         recipe_1 = Recipe()
-        recipe_1.tags.append("1")
-        recipe_1.tags.append("2")
-        recipe_1.tags.append("3")
+        recipe_1.tags.value = []
+        recipe_1.tags.value.append("1")
+        recipe_1.tags.value.append("2")
+        recipe_1.tags.value.append("3")
 
         recipe_2 = Recipe()
         self.assertNotEqual(recipe_1.tags, recipe_2.tags)

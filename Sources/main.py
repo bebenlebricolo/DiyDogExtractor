@@ -264,7 +264,7 @@ def extract_header(elements : list[TextElement], recipe : rcp.Recipe) -> rcp.Rec
     for elem in elements :
         # Some beers start with the infamous "#" and we just want to isolate the beer number (always formatted as "#123")
         if elem.text.startswith("#") and elem.text.lstrip("#").isnumeric() :
-            recipe.number = int(elem.text.lstrip("#"))
+            recipe.number.value = int(elem.text.lstrip("#"))
             number_element = elem
 
     # The beer's name is always the closest item to the beer's number, in the formatting
@@ -277,7 +277,7 @@ def extract_header(elements : list[TextElement], recipe : rcp.Recipe) -> rcp.Rec
     name_comps_aligned = [x for x in elements if x.y == name_elem.y]
     name_comps_aligned.sort(key=lambda x : x.x)
 
-    recipe.name = name_elem.text
+    recipe.name.value = name_elem.text
 
     # Special handling for close words
     if len(name_comps_aligned) > 1 :
@@ -285,12 +285,12 @@ def extract_header(elements : list[TextElement], recipe : rcp.Recipe) -> rcp.Rec
         for i in range(1, len(name_comps_aligned)):
             if name_comps_aligned[i].x - name_comps_aligned[i-1].x >= threshold_distance:
                 # This section seems to represent subtitles for beers, like characteristics, etc...
-                recipe.subtitle += name_comps_aligned[i].text + " "
+                recipe.subtitle.value += name_comps_aligned[i].text + " "
             else :
-                recipe.name += name_comps_aligned[i].text
+                recipe.name.value += name_comps_aligned[i].text
             consumed_elements.append(name_comps_aligned[i])
-    recipe.name = recipe.name.rstrip(" ")
-    recipe.subtitle = recipe.subtitle.rstrip(" ")
+    recipe.name.value = recipe.name.value.rstrip(" ")
+    recipe.subtitle.value = recipe.subtitle.value.rstrip(" ")
 
     # We need to keep track of the consumed element so that they don't fall into the tag lines
     consumed_elements.append(number_element)
@@ -303,7 +303,7 @@ def extract_header(elements : list[TextElement], recipe : rcp.Recipe) -> rcp.Rec
     # Extracting first brew date, ABV, IBU and OG elements
     for element in elements :
         if element.text.find("FIRST BREWED") != -1 :
-            recipe.first_brewed = element.text[len("FIRST BREWED "):]
+            recipe.first_brewed.value = element.text[len("FIRST BREWED "):]
             consumed_elements.append(element)
             continue
 
@@ -354,50 +354,54 @@ def extract_header(elements : list[TextElement], recipe : rcp.Recipe) -> rcp.Rec
         # Fill in the recipe with the header's content
         match = NUMERICS_PATTERN.match(abv_data_elem.text)
         if match :
-            recipe.basics.abv = float(match.groups()[0])
+            recipe.basics.value.abv = float(match.groups()[0])
 
     # Same, skip if nothing was parsed
     if ibu_data_elem :
         match = NUMERICS_PATTERN.match(ibu_data_elem.text)
         if match :
-            recipe.basics.ibu = float(match.groups()[0])
+            recipe.basics.value.ibu = float(match.groups()[0])
 
     # Same, skip if nothing was parsed
     if og_data_elem :
-        recipe.basics.target_og = float(og_data_elem.text)
+        recipe.basics.value.target_og = float(og_data_elem.text)
 
 
 
     remaining_elements : list[TextElement] = []
-    for element in elements :
-        if not element in consumed_elements :
-            remaining_elements.append(element)
+    if len(remaining_elements) != 0 :
+        if not recipe.tags.value :
+            recipe.tags.value = []
 
-    # Extract all tags from remaining elements
-    remaining_elements.sort(key=lambda x : x.x)
-    for i in range(0, len(remaining_elements)) :
-        element = remaining_elements[i]
-        splitted = remaining_elements[i].text.split(".")
-        for part in splitted :
-            if part != "" :
-                # We have some tag lines that contain stuff like "12 th anniversary", but they are encoded by the PDF as two
-                # separate items for some reasons
-                if part == "TH" and i != 0 and remaining_elements[i - 1].text.isnumeric() :
-                    recipe.tags[len(recipe.tags) - 1] += "th"
+        for element in elements :
+            if not element in consumed_elements :
+                remaining_elements.append(element)
 
-                else :
-                    # Popping out all parasitic characters such as " (FANZINE) " -> "FANZINE"
-                    recipe.tags.append(part.strip().lstrip("(").rstrip(")").strip())
+        # Extract all tags from remaining elements
+        remaining_elements.sort(key=lambda x : x.x)
+        for i in range(0, len(remaining_elements)) :
+            element = remaining_elements[i]
+            splitted = remaining_elements[i].text.split(".")
+            for part in splitted :
+                if part != "" :
+                    # We have some tag lines that contain stuff like "12 th anniversary", but they are encoded by the PDF as two
+                    # separate items for some reasons
+                    if part == "TH" and i != 0 and remaining_elements[i - 1].text.isnumeric() :
+                        recipe.tags.value[len(recipe.tags.value) - 1] += "th"
+                    else :
+                        # Popping out all parasitic characters such as " (FANZINE) " -> "FANZINE"
+                        recipe.tags.value.append(part.strip().lstrip("(").rstrip(")").strip())
 
 
 
     return recipe
 
 def extract_footer(elements : list[TextElement], recipe : rcp.Recipe) -> rcp.Recipe :
-    # Only extract page number
-    for element in elements :
-        if element.text.isnumeric() :
-            recipe.page_number = int(element.text)
+    # We don't really care about page number anymore since this information is already being parsed from the header
+    # # Only extract page number
+    # for element in elements :
+    #     if element.text.isnumeric() :
+    #         recipe.number = int(element.text)
     return recipe
 
 
@@ -513,7 +517,7 @@ def parse_this_beer_is_category(elements : list[TextElement], recipe : rcp.Recip
     # Pop the first element "THIS BEER IS", we don't want that in the description
     for elem in elements[1:] :
         description += elem.text + " "
-    recipe.description.text = description.strip()
+    recipe.description.value = description.strip()
     return recipe
 
 def line_from_text_elements(elements: list[TextElement]) -> str :
@@ -558,28 +562,28 @@ def parse_basics_category(elements : list[TextElement], recipe : rcp.Recipe) -> 
 
                 # Dispatch the volume accordingly
                 if flattened_rows[0].text == "VOLUME" :
-                    recipe.basics.volume = volume
+                    recipe.basics.value.volume = volume
                 else :
-                    recipe.basics.boil_volume = volume
+                    recipe.basics.value.boil_volume = volume
 
             case "ABV" :
-                if recipe.basics.abv != 0.0 :
+                if recipe.basics.value.abv != 0.0 :
                     continue
                 # Parsing ABV in case it was not extracted from header yet ; There should only be 2 columns here
                 match = NUMERICS_PATTERN.match(flattened_rows[1].text)
                 if match :
-                    recipe.basics.abv = float(match.groups()[0])
+                    recipe.basics.value.abv = float(match.groups()[0])
 
             case "TARGET OG" :
-                if recipe.basics.target_og != 0.0 :
+                if recipe.basics.value.target_og != 0.0 :
                     continue
                 value = flattened_rows[1].text
-                recipe.basics.target_og = float(value)
+                recipe.basics.value.target_og = float(value)
 
                 # Again, ugly stuff ... gravities were swapped, and OG in "Basics" section
                 # was replaced with ABV !
                 if recipe.number == 413 :
-                        recipe.basics.target_fg = recipe.basics.target_og
+                        recipe.basics.value.target_fg = recipe.basics.value.target_og
 
             case "TARGET FG" :
                 try :
@@ -587,7 +591,7 @@ def parse_basics_category(elements : list[TextElement], recipe : rcp.Recipe) -> 
                     # We're only taking the first one, by convention
                     # Some beers have a range (such as the beer #192) which we can't reproduce with a single
                     # value without adding extra complexity to the data model, so taking the first value will do the job instead
-                    recipe.basics.target_fg = float(matches[0])
+                    recipe.basics.value.target_fg = float(matches[0])
                 except Exception as e :
                     logger.log("/!\\ Caught weird stuff in Target FG for beer {}. Text was : {}".format(recipe.number, flattened_rows[1]))
 
@@ -608,22 +612,22 @@ def parse_basics_category(elements : list[TextElement], recipe : rcp.Recipe) -> 
 
                 # Same treatment for both categories
                 if "EBC" in flattened_rows[0].text :
-                    recipe.basics.ebc = fval
+                    recipe.basics.value.ebc = fval
                 else :
-                    recipe.basics.srm = fval
+                    recipe.basics.value.srm = fval
 
             case "PH" :
                 # Ph is missing on some recipes, so we can try to infer it
                 if len(flattened_rows) == 2 :
-                    recipe.basics.ph = float(flattened_rows[1].text)
+                    recipe.basics.value.ph = float(flattened_rows[1].text)
                 else :
                     # 4.4 seems a pretty common value in BrewDog's beers
-                    recipe.basics.ph = 4.4
+                    recipe.basics.value.ph = 4.4
 
             case "ATTENUATION LEVEL" :
                 match = NUMERICS_PATTERN.match(flattened_rows[1].text)
                 if match :
-                    recipe.basics.attenuation_level = float(match.groups()[0])
+                    recipe.basics.value.attenuation_level = float(match.groups()[0])
 
             case _ :
                 logger.log("/!\\ Unhandled element in beer number {}. Element was : {}".format(recipe.number, flattened_rows[0].text))
@@ -793,7 +797,7 @@ def parse_method_timings_category(elements : list[TextElement], recipe : rcp.Rec
 
             method_timings.twists.append(twist)
 
-    recipe.method_timings = method_timings
+    recipe.method_timings.value = method_timings
     return recipe
 
 def pre_process_malts(elements : list[TextElement]) -> list[TextElement] :
@@ -856,12 +860,12 @@ def parse_ingredients_category(elements : list[TextElement], recipe : rcp.Recipe
 
     # Beer without ingredients, the beer #89 is one of them
     if not malt_elem and not hops_elem and not yeast_elem :
-        recipe.ingredients.alternative_description = ""
+        recipe.ingredients.value.alternative_description = ""
         for elem in elements :
             if elem.text == "INGREDIENTS" :
                 continue
-            recipe.ingredients.alternative_description += elem.text + " "
-        recipe.ingredients.alternative_description = recipe.ingredients.alternative_description.strip()
+            recipe.ingredients.value.alternative_description += elem.text + " "
+        recipe.ingredients.value.alternative_description = recipe.ingredients.value.alternative_description.strip()
         return recipe
 
     malt_data_list : list[TextElement] = []
@@ -884,7 +888,7 @@ def parse_ingredients_category(elements : list[TextElement], recipe : rcp.Recipe
 
     # Parse malts
     malt_data_per_row = 3
-    recipe.ingredients.malts.clear()
+    recipe.ingredients.value.malts.clear()
 
     # Pre-process malts
     # Required because sometimes malts might have trailing parts
@@ -912,7 +916,7 @@ def parse_ingredients_category(elements : list[TextElement], recipe : rcp.Recipe
         match = NUMERICS_PATTERN.match(dataset[2].text)
         if match :
             new_malt.lbs = float(match.groups()[0])
-        recipe.ingredients.malts.append(new_malt)
+        recipe.ingredients.value.malts.append(new_malt)
 
 
     # Parse hops
@@ -956,7 +960,7 @@ def parse_ingredients_category(elements : list[TextElement], recipe : rcp.Recipe
         name = dataset[0].text
 
         new_hop = rcp.Hop(name=name, amount=amount, when=when, attribute=attribute)
-        recipe.ingredients.hops.append(new_hop)
+        recipe.ingredients.value.hops.append(new_hop)
         if hops_parsing_error != HopParsingErrors.ERROR_OK:
             recipe.add_parsing_error("Had some issues when reading hop : guessed name : {} . Reason : '{}'. Use the pdf page for reference !".format(name, hops_parsing_error.value))
 
@@ -964,14 +968,14 @@ def parse_ingredients_category(elements : list[TextElement], recipe : rcp.Recipe
     # Parse yeast
     for yeast_data in yeast_data_list :
         new_yeast = rcp.Yeast(name=yeast_data.text)
-        recipe.ingredients.yeasts.append(new_yeast)
+        recipe.ingredients.value.yeasts.append(new_yeast)
 
     return recipe
 
 def parse_food_pairing_category(elements : list[TextElement], recipe : rcp.Recipe) -> rcp.Recipe :
     elements.sort(key=lambda x : x.y, reverse=True)
     rows = split_blocks_based_on_y_distance(elements)
-    food_pairing = rcp.FoodPairing()
+    food_pairing = []
     for row in rows :
         # Skipping this element, we don't need it now
         if find_element(row, "FOOD PAIRING") :
@@ -982,9 +986,9 @@ def parse_food_pairing_category(elements : list[TextElement], recipe : rcp.Recip
         flattened_rows.sort(key=lambda x : x.x)
 
         for dataset in flattened_rows :
-            food_pairing.pairings.append(dataset.text)
+            food_pairing.append(dataset.text)
 
-    recipe.food_pairing = food_pairing
+    recipe.food_pairing.value = food_pairing
     return recipe
 
 def parse_brewers_tip_category(elements : list[TextElement], recipe : rcp.Recipe) -> rcp.Recipe :
@@ -993,7 +997,7 @@ def parse_brewers_tip_category(elements : list[TextElement], recipe : rcp.Recipe
     # Pop the first element "BREWERS TIP", we don't want that in the description
     for elem in elements[1:] :
         description += elem.text + " "
-    recipe.brewers_tip.text = description.strip()
+    recipe.brewers_tip.value = description.strip()
     return recipe
 
 def parse_packaging_category(elements : list[TextElement], recipe : rcp.Recipe) -> rcp.Recipe :
@@ -1002,7 +1006,7 @@ def parse_packaging_category(elements : list[TextElement], recipe : rcp.Recipe) 
     if find_element(elements, "KEG ONLY") :
         packaging = rcp.PackagingType.Keg
 
-    recipe.packaging = packaging
+    recipe.packaging.value = packaging
     return recipe
 
 def extract_body(elements : list[TextElement], recipe : rcp.Recipe) -> rcp.Recipe :
@@ -1178,8 +1182,8 @@ def deploy_to_directory(cached_recipes_dir : Path,
 
     # A bit of renaming for the images
     for image in extracted_images_list :
-        page_number = int(image.parent.name.lstrip("page_"))
-        image_name = f"beer_{page_number}.png"
+        number = int(image.parent.name.lstrip("page_"))
+        image_name = f"beer_{number}.png"
         shutil.copyfile(image, dep_images_dir.joinpath(image_name))
 
 
@@ -1329,13 +1333,13 @@ def main(args) :
             #if page[0] not in candidates :
             #    continue
 
-            page_number = page[0]
+            number = page[0]
             page_filepath = page[1]
 
             page_images_dir = cached_images_dir.joinpath(page_filepath.stem)
             logger.log("Caching images for page {}".format(page_filepath.stem))
-            most_probable_packaging_type = cache_images(page_images_dir, page_filepath, page_number)
-            packaging_type_beer_number_map.append((page_number, most_probable_packaging_type))
+            most_probable_packaging_type = cache_images(page_images_dir, page_filepath, number)
+            packaging_type_beer_number_map.append((number, most_probable_packaging_type))
 
     else :
         logger.log("-> OK : Found {} pages images in {}".format(len(images_list), cached_pdf_pages_dir))
@@ -1382,7 +1386,7 @@ def main(args) :
 
         # Should be correctly indexed at this stage
         if not skip_image_extraction :
-            recipe.packaging = packaging_type_beer_number_map[recipe.number - 1][1]
+            recipe.packaging.value = packaging_type_beer_number_map[recipe.number.value - 1][1]
         #recipe.packaging = [x[1] for x in packaging_type_beer_number_map if x[0] == recipe.number][0]
 
     # Dump recipes on disk now !
