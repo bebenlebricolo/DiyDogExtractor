@@ -4,6 +4,13 @@
 name: DiyDogExtractor Build and Run tests
 
 on:
+  workflow_dispatch :
+    inputs:
+      upload_db:
+        description: 'Diydog extracted Database upload (as an artifact)'
+        required: true
+        default: false
+
   push:
     branches: [ "main" ]
   pull_request:
@@ -14,7 +21,6 @@ permissions:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     steps:
@@ -59,6 +65,7 @@ jobs:
 
     # Now it's time to upload the newly built database
     - uses: actions/upload-artifact@v3
+      if: github.event.inputs.upload_db == 'true'
       with:
         name: diydogExtractedDB
         path: Sources/.cache/deployed
