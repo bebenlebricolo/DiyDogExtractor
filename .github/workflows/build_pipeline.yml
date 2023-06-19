@@ -1,0 +1,81 @@
+# This workflow will install Python dependencies, run tests and lint with a single version of Python
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
+
+name: DiyDogExtractor Build and Run tests
+
+on:
+  workflow_dispatch :
+    inputs:
+      upload_db:
+        description: 'Diydog extracted Database upload (as an artifact)'
+        required: true
+        default: false
+
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v3
+      with:
+        python-version: "3.11"
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r Sources/requirements.txt
+
+    # Tests shall pass before continuing !
+    - name: Test with pytest
+      run: |
+        pytest Sources --junit-xml=Sources/.cache/test_results.xml
+      continue-on-error: false
+
+    # - name: Test Report
+    #   uses: dorny/test-reporter@v1
+    #   if: success() || failure()                 # run this step even if previous step failed
+    #   with:
+    #     name: Pytest results                      # Name of the check run which will be created
+    #     path: Sources/.cache/test_results.xml    # Path to test results
+    #     reporter: jest-junit                     # Format of test results
+
+    - name: Archive Test Results
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: test-results
+        path: Sources/.cache/test_results.xml
+
+    - name : run DiyDog extraction services
+      run : |
+        python -m Sources.main true false true
+
+      # Now it's uploading logs
+    - name: Archive extraction session logs
+      uses: actions/upload-artifact@v3
+      with:
+        name: extraction_session_logs
+        path: Sources/.cache/logs.txt
+
+    - name : Patch the database with known-good data
+      run : |
+        python -m Sources.ScriptingTools.patcher Patches Sources/.cache/deployed/recipes
+
+    # Now it's time to upload the newly built database
+    - name: Archive extracted database for diydog book
+      uses: actions/upload-artifact@v3
+      if: github.event.inputs.upload_db == 'true'
+      with:
+        name: diydogExtractedDB
+        path: Sources/.cache/deployed
+
