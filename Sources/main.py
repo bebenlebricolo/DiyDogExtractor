@@ -270,7 +270,7 @@ def extract_header(elements : list[TextElement], recipe : rcp.Recipe) -> rcp.Rec
     # The beer's name is always the closest item to the beer's number, in the formatting
     name_elem = find_closest_element(elements, number_element)
 
-    if recipe.number == 15:
+    if recipe.number.value == 15:
         pass
 
     # For some beers, name components are split (because of a special character that needed dedicated pdf drawing instructions (...))
@@ -369,13 +369,13 @@ def extract_header(elements : list[TextElement], recipe : rcp.Recipe) -> rcp.Rec
 
 
     remaining_elements : list[TextElement] = []
+    for element in elements :
+        if not element in consumed_elements :
+            remaining_elements.append(element)
+
     if len(remaining_elements) != 0 :
         if not recipe.tags.value :
             recipe.tags.value = []
-
-        for element in elements :
-            if not element in consumed_elements :
-                remaining_elements.append(element)
 
         # Extract all tags from remaining elements
         remaining_elements.sort(key=lambda x : x.x)
@@ -582,7 +582,7 @@ def parse_basics_category(elements : list[TextElement], recipe : rcp.Recipe) -> 
 
                 # Again, ugly stuff ... gravities were swapped, and OG in "Basics" section
                 # was replaced with ABV !
-                if recipe.number == 413 :
+                if recipe.number.value == 413 :
                         recipe.basics.value.target_fg = recipe.basics.value.target_og
 
             case "TARGET FG" :
@@ -593,7 +593,7 @@ def parse_basics_category(elements : list[TextElement], recipe : rcp.Recipe) -> 
                     # value without adding extra complexity to the data model, so taking the first value will do the job instead
                     recipe.basics.value.target_fg = float(matches[0])
                 except Exception as e :
-                    logger.log("/!\\ Caught weird stuff in Target FG for beer {}. Text was : {}".format(recipe.number, flattened_rows[1]))
+                    logger.log("/!\\ Caught weird stuff in Target FG for beer {}. Text was : {}".format(recipe.number.value, flattened_rows[1]))
 
 
             # Beers #207, #213; #214, #215 have a weird field named TARGET EBC WORT that needs to be handled as a regular ebc
@@ -630,7 +630,7 @@ def parse_basics_category(elements : list[TextElement], recipe : rcp.Recipe) -> 
                     recipe.basics.value.attenuation_level = float(match.groups()[0])
 
             case _ :
-                logger.log("/!\\ Unhandled element in beer number {}. Element was : {}".format(recipe.number, flattened_rows[0].text))
+                logger.log("/!\\ Unhandled element in beer number {}. Element was : {}".format(recipe.number.value, flattened_rows[0].text))
 
     return recipe
 
@@ -697,22 +697,22 @@ def parse_method_timings_category(elements : list[TextElement], recipe : rcp.Rec
                     mash_temp.celsius = float(matches[0])
                     mash_temp.fahrenheit = celsius_to_fahrenheit(mash_temp.celsius)
                 else :
-                    logger.log("/!\\ Could not read temperature from mash instructions for beer {}. Line was {}".format(recipe.number, line_from_text_elements(flattened_row)))
+                    logger.log("/!\\ Could not read temperature from mash instructions for beer {}. Line was {}".format(recipe.number.value, line_from_text_elements(flattened_row)))
 
                 matches = NUMERICS_PATTERN.findall(flattened_row[1].text)
                 if len(matches) != 0 :
                     mash_temp.time = float(matches[0])
                 else :
-                    logger.log("/!\\ Could not read timing from mash instructions for beer {}. Line was {}".format(recipe.number, line_from_text_elements(flattened_row)))
+                    logger.log("/!\\ Could not read timing from mash instructions for beer {}. Line was {}".format(recipe.number.value, line_from_text_elements(flattened_row)))
             else :
                 # Extract Celsius degrees from mash temp
                 matches = DEGREES_PATTERN.findall(flattened_row[0].text)
                 if len(matches) != 0 :
                     mash_temp.celsius = float(matches[0])
                 else :
-                    logger.log("/!\\ Caught weird looking patterns for Celsius degrees for beer {} when parsing mash temps data : {}".format(recipe.number, flattened_row[0].text))
+                    logger.log("/!\\ Caught weird looking patterns for Celsius degrees for beer {} when parsing mash temps data : {}".format(recipe.number.value, flattened_row[0].text))
                     error_on_celsius = True
-                if recipe.number == 220 :
+                if recipe.number.value == 220 :
                     pass
 
 
@@ -721,7 +721,7 @@ def parse_method_timings_category(elements : list[TextElement], recipe : rcp.Rec
                 if len(matches) != 0 :
                     mash_temp.fahrenheit = float(matches[0])
                 else :
-                    logger.log("/!\\ Caught weird looking patterns for Fahrenheit degrees for beer {} when parsing mash temps data : {}".format(recipe.number, flattened_row[1].text))
+                    logger.log("/!\\ Caught weird looking patterns for Fahrenheit degrees for beer {} when parsing mash temps data : {}".format(recipe.number.value, flattened_row[1].text))
                     error_on_farenheit = True
 
                 # Not all beers have timing data for mash temperatures
@@ -730,7 +730,7 @@ def parse_method_timings_category(elements : list[TextElement], recipe : rcp.Rec
                     if len(matches) != 0 :
                         mash_temp.time = float(matches[0])
                     else :
-                        logger.log("/!\\ Caught weird looking patterns for timing for beer {} when parsing mash temps data : {}".format(recipe.number, flattened_row[2].text))
+                        logger.log("/!\\ Caught weird looking patterns for timing for beer {} when parsing mash temps data : {}".format(recipe.number.value, flattened_row[2].text))
 
             # Trying to bit a little bit more resilient on temp readings, if one managed to go through!
             if error_on_celsius and not error_on_farenheit :
@@ -760,13 +760,13 @@ def parse_method_timings_category(elements : list[TextElement], recipe : rcp.Rec
                 if len(matches) != 0 :
                     method_timings.fermentation.celsius = float(matches[0])
                 else :
-                    logger.log("/!\\ Caught weird looking patterns for fermentation temperature for beer {} when parsing mash temps data : {}".format(recipe.number, fermentation_data_list[0].text))
+                    logger.log("/!\\ Caught weird looking patterns for fermentation temperature for beer {} when parsing mash temps data : {}".format(recipe.number.value, fermentation_data_list[0].text))
 
                 matches = DEGREES_PATTERN.findall(fermentation_data_list[0].text)
                 if len(matches) != 0 :
                     method_timings.fermentation.fahrenheit = float(matches[0])
                 else :
-                    logger.log("/!\\ Caught weird looking patterns for fermentation temperature for beer {} when parsing mash temps data : {}".format(recipe.number, fermentation_data_list[0].text))
+                    logger.log("/!\\ Caught weird looking patterns for fermentation temperature for beer {} when parsing mash temps data : {}".format(recipe.number.value, fermentation_data_list[0].text))
             else :
                 method_timings.fermentation.tips.append(flattened_row[0].text)
 
@@ -789,10 +789,10 @@ def parse_method_timings_category(elements : list[TextElement], recipe : rcp.Rec
                     twist.amount = float(matches[0])
                 else :
                     twist.amount = -1.0
-                    logger.log("/!\\ Missing data for twist amount in beer {}. Parsed block was : {}".format(recipe.number, line_from_text_elements(flattened_row)))
+                    logger.log("/!\\ Missing data for twist amount in beer {}. Parsed block was : {}".format(recipe.number.value, line_from_text_elements(flattened_row)))
 
                 # Misformatting strikes again !
-                if recipe.number == 103 :
+                if recipe.number.value == 103 :
                     twist.when = flattened_row[1].text
 
             method_timings.twists.append(twist)
@@ -928,7 +928,7 @@ def parse_ingredients_category(elements : list[TextElement], recipe : rcp.Recipe
     assert(hops_data_list[2].text == "Attribute")
 
     threshold = 1.5
-    if recipe.number == 237 or recipe.number == 250 :
+    if recipe.number.value == 237 or recipe.number.value == 250 :
         threshold = 1.8
 
     hops_rows = split_blocks_based_on_y_distance(hops_data_list[3:], threshold = threshold)
@@ -955,7 +955,7 @@ def parse_ingredients_category(elements : list[TextElement], recipe : rcp.Recipe
         if match :
             amount = float(match.groups()[0])
         else:
-            logger.log("/!\\ Could not extract amount from beer {}. Original text was : {}".format(recipe.number, dataset[columns_count - 2].text))
+            logger.log("/!\\ Could not extract amount from beer {}. Original text was : {}".format(recipe.number.value, dataset[columns_count - 2].text))
             hops_parsing_error = HopParsingErrors.ERROR_INCORRECT_AMOUNT
         name = dataset[0].text
 
@@ -1069,7 +1069,7 @@ def extract_body(elements : list[TextElement], recipe : rcp.Recipe) -> rcp.Recip
 
     # Sometimes, the Method / timings element is not placed correctly (pdf placing artifacts...?)
     # Custom code for beer # 307 ... such a shame to do that kind of stuff ...
-    if recipe.number == 307 :
+    if recipe.number.value == 307 :
         found = find_element(column_1_elements, "METHOD / TIMINGS")
         if found :
             logger.log("Found Method/Timings element in wrong column, moving it to column 0")
@@ -1082,7 +1082,7 @@ def extract_body(elements : list[TextElement], recipe : rcp.Recipe) -> rcp.Recip
                 found.y = mash_temp_elem.y + 10
                 column_0_elements.append(found)
             else :
-                raise Exception("Could not find Mashing temperature data in current page ; beer number is {}".format(recipe.number))
+                raise Exception("Could not find Mashing temperature data in current page ; beer number is {}".format(recipe.number.value))
 
     # Sort items by y position (Top to bottom)
     column_0_elements.sort(key=lambda x : x.y, reverse=True)
@@ -1156,7 +1156,7 @@ def hook_pdf_and_extracted_image_to_recipe(recipe : rcp.Recipe):
        It uses relative path mode, relative to the recipes folder (the recipe starts processing path from where it stands)
     """
 
-    base_filename = f"beer_{recipe.number}"
+    base_filename = f"beer_{recipe.number.value}"
     relative_image_filepath = f"../images/{base_filename}.png"
     relative_pdf_page_filepath = f"../pdf_pages/{base_filename}.pdf"
     recipe.image.value = rec.FileRecord(relative_image_filepath)
@@ -1314,8 +1314,10 @@ def main(args) :
     images_list = list_files_pattern(cached_images_dir, "extracted_silhouette", ".png")
 
 
+    # Will be needed for caching purposes
+    packaging_cached_map_filepath = cached_images_dir.joinpath("packaging_map.json")
     packaging_type_beer_number_map : list[tuple[int, rcp.PackagingType]] = []
-    if len(images_list) < 100 and skip_image_extraction:
+    if len(images_list) < 100 and skip_image_extraction or not packaging_cached_map_filepath.exists():
         skip_image_extraction = False
 
     # Extracting pdf rendered images !
@@ -1341,9 +1343,28 @@ def main(args) :
             most_probable_packaging_type = cache_images(page_images_dir, page_filepath, number)
             packaging_type_beer_number_map.append((number, most_probable_packaging_type))
 
+        # Cache this as well, might speed up the process as we don't need to wait for the image extraction process
+        # to run over and over if this data is also cached (...)
+        packaging_cached_content : dict = {"packaging" : []}
+        for element in packaging_type_beer_number_map :
+            (number, packaging) = element
+            packaging_cached_content["packaging"].append({"number" : number, "packaging" : packaging.value})
+        with open(packaging_cached_map_filepath, 'w') as file :
+            json.dump(packaging_cached_content, file, indent=4)
+
     else :
         logger.log("-> OK : Found {} pages images in {}".format(len(images_list), cached_pdf_pages_dir))
         logger.log("Image extraction step skipped.")
+
+        logger.log("Reading back packaging map from file...")
+        with open(packaging_cached_map_filepath, 'r') as file :
+            packaging_cached_content = json.load(file)
+
+        logger.log("Reconstructing packaging map ...")
+        packaging_type_beer_number_map = []
+        for elem in packaging_cached_content["packaging"] :
+            packaging_type_beer_number_map.append((elem['number'], rcp.PackagingType[elem['packaging']]))
+
 
     # List already cached images
     logger.log("Listing available pages images and extracted images...")
@@ -1395,8 +1416,8 @@ def main(args) :
 
     logger.log("Dumping extracted recipes on disk now !")
     for recipe in recipes_list :
-        logger.log("Dumping recipe {}, number {}".format(recipe.name, recipe.number))
-        filename = "recipe_{}.json".format(recipe.number)
+        logger.log("Dumping recipe {}, number {}".format(recipe.name.value, recipe.number.value))
+        filename = "recipe_{}.json".format(recipe.number.value)
         filepath = cached_recipes_dir.joinpath(filename)
         with open(filepath, "w") as file :
             json.dump(recipe.to_json(), file, indent=4)

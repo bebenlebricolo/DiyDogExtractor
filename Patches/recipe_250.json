@@ -15,9 +15,8 @@
         "kind": "FileSource",
         "path": "../pdf_pages/beer_250.pdf"
     },
-    "description": {
-        "text": "A 7.2% rye IPA loaded with grapefruit notes, pithy citrus, and huge resinous bitterness, with rye character. The Centennial and Columbus flavours are amplified by the spicy, dry rye."
-    },
+    "description": "A 7.2% rye IPA loaded with grapefruit notes, pithy citrus, and huge resinous bitterness, with rye character. The Centennial and Columbus flavours are amplified by the spicy, dry rye.",
+    "brewersTip": "Be prepared for a long sparge as the rye content is really high.",
     "basics": {
         "volume": {
             "litres": 20.0,
@@ -36,13 +35,11 @@
         "ph": 4.4,
         "attenuationLevel": 84.0
     },
-    "foodPairing": {
-        "pairings": [
-            "Salmon Fishcakes with Rocket Salad",
-            "Baked Goat's Cheese",
-            "Classic Victoria Sponge"
-        ]
-    },
+    "foodPairings": [
+        "Salmon Fishcakes with Rocket Salad",
+        "Baked Goat's Cheese",
+        "Classic Victoria Sponge"
+    ],
     "ingredients": {
         "malts": [
             {
@@ -106,9 +103,6 @@
             }
         ],
         "alternativeDescription": null
-    },
-    "brewersTip": {
-        "text": "Be prepared for a long sparge as the rye content is really high."
     },
     "methodTimings": {
         "mashTemps": [

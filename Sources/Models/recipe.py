@@ -395,7 +395,7 @@ class Recipe(Jsonable) :
             self.food_pairing._prop_key  : self.food_pairing.value if self.food_pairing.value else None,
             self.ingredients._prop_key  : self.ingredients.value.to_json(),
             self.method_timings._prop_key  : self.method_timings.value.to_json(),
-            self.packaging._prop_key  : self.packaging.value,
+            self.packaging._prop_key  : self.packaging.value.value,
             self.parsing_errors._prop_key  : self.parsing_errors.value
         }
 

@@ -28,9 +28,9 @@ def patch_all_recipes(dep_recipes_folder : Path, patch_folder : Path) -> bool:
         patched_recipe = rcp.Recipe()
         with open(patch, 'r') as file :
             patched_recipe.from_json(json.load(file))
-            print(f"Deserialized patch #{patched_recipe.number} : {patched_recipe.name}")
+            print(f"Deserialized patch #{patched_recipe.number.value} : {patched_recipe.name.value}")
         patched_recipes.append(patched_recipe)
-        patched_recipes_indexes.append(patched_recipe.number)
+        patched_recipes_indexes.append(patched_recipe.number.value)
     print("Patch deserialization ok")
 
     all_recipes_file = dep_recipes_folder.joinpath(ALL_RECIPES_FILENAME)
@@ -48,8 +48,8 @@ def patch_all_recipes(dep_recipes_folder : Path, patch_folder : Path) -> bool:
 
             # While parsing, if we happen to have the patched version at hands then
             # use it instead of the parsed version
-            if parsed_recipe.number in patched_recipes_indexes :
-                matching_recipe = next(filter(lambda x : x.number == parsed_recipe.number, patched_recipes))
+            if parsed_recipe.number.value in patched_recipes_indexes :
+                matching_recipe = next(filter(lambda x : x.number.value == parsed_recipe.number.value, patched_recipes))
                 all_recipes_parsed.append(matching_recipe)
             else :
                 all_recipes_parsed.append(parsed_recipe)

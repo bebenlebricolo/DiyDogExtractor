@@ -15,9 +15,7 @@
         "kind": "FileSource",
         "path": "../pdf_pages/beer_237.pdf"
     },
-    "description": {
-        "text": "A huge, chewy barley wine, loaded with bitterness and balanced with a sweet and spicy combo of mango and chili. A concept brew which was so well received, we tweaked it and it became Neon Overlord."
-    },
+    "description": "A huge, chewy barley wine, loaded with bitterness and balanced with a sweet and spicy combo of mango and chili. A concept brew which was so well received, we tweaked it and it became Neon Overlord.",
     "basics": {
         "volume": {
             "litres": 20.0,
@@ -36,13 +34,11 @@
         "ph": 4.4,
         "attenuationLevel": 84.0
     },
-    "foodPairing": {
-        "pairings": [
-            "Vegetable Samosas",
-            "Thai Green Chicken Curry",
-            "Vanilla Panna Cotta"
-        ]
-    },
+    "foodPairings": [
+        "Vegetable Samosas",
+        "Thai Green Chicken Curry",
+        "Vanilla Panna Cotta"
+    ],
     "ingredients": {
         "malts": [
             {
@@ -108,9 +104,7 @@
         ],
         "alternativeDescription": null
     },
-    "brewersTip": {
-        "text": "Crack open the chili and add it in a muslin bag so you can take it out when the chilli heat suits you."
-    },
+    "brewersTip": "Crack open the chili and add it in a muslin bag so you can take it out when the chilli heat suits you.",
     "methodTimings": {
         "mashTemps": [
             {

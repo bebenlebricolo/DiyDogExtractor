@@ -15,9 +15,8 @@
         "kind": "FileSource",
         "path": "../pdf_pages/beer_290.pdf"
     },
-    "description": {
-        "text": "Brewed exclusively for the Irish market, this Hello My Name brew features a twist of flavour inspired by Ireland."
-    },
+    "description": "Brewed exclusively for the Irish market, this Hello My Name brew features a twist of flavour inspired by Ireland.",
+    "brewersTip": "Save yourself a lot of hassle and buy the Elderflower as a concentrate or cordial. Collecting elderberries ranks low on the FPES (fruit picking enjoyment scale), can't imagine the flower picking is much better.",
     "basics": {
         "volume": {
             "litres": 20.0,
@@ -36,13 +35,11 @@
         "ph": 4.4,
         "attenuationLevel": 87.0
     },
-    "foodPairing": {
-        "pairings": [
-            "Grilled sea bass fillet",
-            "Sushi maki",
-            "Summer fruit pudding"
-        ]
-    },
+    "foodPairings": [
+        "Grilled sea bass fillet",
+        "Sushi maki",
+        "Summer fruit pudding"
+    ],
     "ingredients": {
         "malts": [
             {
@@ -106,9 +103,6 @@
             }
         ],
         "alternativeDescription": null
-    },
-    "brewersTip": {
-        "text": "Save yourself a lot of hassle and buy the Elderflower as a concentrate or cordial. Collecting elderberries ranks low on the FPES (fruit picking enjoyment scale), can't imagine the flower picking is much better."
     },
     "methodTimings": {
         "mashTemps": [

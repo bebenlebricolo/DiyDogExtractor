@@ -1,6 +1,11 @@
 import unittest
-from ..recipe import *
 import json
+from tempfile import gettempdir
+from pathlib import Path
+import shutil
+
+from ..recipe import *
+from ...Utils.filesystem import ensure_folder_exist
 
 class TestRecipeModels(unittest.TestCase) :
 
@@ -186,6 +191,9 @@ class TestRecipeModels(unittest.TestCase) :
         self.assertEqual(method_timings, parsed)
 
     def test_Recipe_json_symmetry(self) :
+        tmp_dir = Path(gettempdir()).joinpath(f"DiyDogExtractor/{Path(__file__).stem}")
+        ensure_folder_exist(tmp_dir)
+
         recipe = Recipe()
         recipe.basics.value = self.get_fake_Basics()
         recipe.brewers_tip.value = self.get_fake_BrewersTip()
@@ -204,9 +212,19 @@ class TestRecipeModels(unittest.TestCase) :
             "tag 3",
         ]
 
+
+        test_json_filepath = tmp_dir.joinpath("recipe_test_dump.json")
         data = recipe.to_json()
+
+        # Trying to dump the file to filesystem, it should be json compatible !
+        with open(test_json_filepath, "w") as file :
+            json.dump(data, file, indent=4)
+
         parsed = Recipe()
-        parsed.from_json(data)
+
+        # Should be able to read a Json representation as well
+        with open(test_json_filepath, 'r') as file :
+            parsed.from_json(json.load(file))
         self.assertEqual(recipe, parsed)
 
 
