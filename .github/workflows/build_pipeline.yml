@@ -41,13 +41,13 @@ jobs:
         pytest Sources --junit-xml=Sources/.cache/test_results.xml
       continue-on-error: false
 
-    - name: Test Report
-      uses: dorny/test-reporter@v1
-      if: success() || failure()                 # run this step even if previous step failed
-      with:
-        name: Pytes results                      # Name of the check run which will be created
-        path: Sources/.cache/test_results.xml    # Path to test results
-        reporter: jest-junit                     # Format of test results
+    # - name: Test Report
+    #   uses: dorny/test-reporter@v1
+    #   if: success() || failure()                 # run this step even if previous step failed
+    #   with:
+    #     name: Pytest results                      # Name of the check run which will be created
+    #     path: Sources/.cache/test_results.xml    # Path to test results
+    #     reporter: jest-junit                     # Format of test results
 
     - name: Archive Test Results
       if: always()
