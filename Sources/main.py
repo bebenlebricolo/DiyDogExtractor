@@ -1157,8 +1157,9 @@ def hook_pdf_and_extracted_image_to_recipe(recipe : rcp.Recipe):
     """
 
     base_filename = f"beer_{recipe.number.value}"
+    base_page_filename = f"page_{recipe.number.value}"
     relative_image_filepath = f"../images/{base_filename}.png"
-    relative_pdf_page_filepath = f"../pdf_pages/{base_filename}.pdf"
+    relative_pdf_page_filepath = f"../pdf_pages/{base_page_filename}.pdf"
     recipe.image.value = rec.FileRecord(relative_image_filepath)
     recipe.pdf_page.value = rec.FileRecord(relative_pdf_page_filepath)
 
