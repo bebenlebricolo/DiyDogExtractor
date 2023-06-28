@@ -1,0 +1,131 @@
+{
+    "name": "AB:16",
+    "subtitle": "",
+    "number": 145,
+    "tags": [
+        "COFFEE-INFUSED BELGIAN QUAD"
+    ],
+    "firstBrewed": "FEBUARY 2014",
+    "image": {
+        "kind": "FileSource",
+        "path": "../images/beer_145.png"
+    },
+    "pdfPage": {
+        "kind": "FileSource",
+        "path": "../pdf_pages/page_145.pdf"
+    },
+    "description": "On the nose, clove and nutmeg, cafe au lait, subtle dark fruit notes, and hints of candied lemon peel. On the palate, smooth & fruity espresso, milk chocolate, and warm brandy- soaked currants are in the middle of a high-class dance-off against the spicy and peppery Belgian character. The overall impression evokes malt loaf or ginger cake.",
+    "brewersTip": "For the traditional cellering, age this beer in vessel or bottle for 2 - 3 months at cellar temperature.",
+    "basics": {
+        "volume": {
+            "litres": 20.0,
+            "galons": 5.0
+        },
+        "boilVolume": {
+            "litres": 25.0,
+            "galons": 6.6
+        },
+        "abv": 10.6,
+        "targetOg": 1090.0,
+        "targetFg": 1012.0,
+        "ebc": 30.0,
+        "ibu": 55.0,
+        "srm": 15.0,
+        "ph": 4.4,
+        "attenuationLevel": 86.7
+    },
+    "foodPairings": [
+        "Roasted duck",
+        "Gorgonzola and rye nut bread with smoked honey ham",
+        "Raspberry coffee cheesecake"
+    ],
+    "ingredients": {
+        "malts": [
+            {
+                "name": "Extra Pale",
+                "kgs": 7.75,
+                "lbs": 17.07
+            },
+            {
+                "name": "Wheat",
+                "kgs": 0.5,
+                "lbs": 1.1
+            },
+            {
+                "name": "Munich",
+                "kgs": 0.5,
+                "lbs": 1.1
+            },
+            {
+                "name": "Crystal 150",
+                "kgs": 0.38,
+                "lbs": 0.83
+            },
+            {
+                "name": "Chocolate",
+                "kgs": 0.13,
+                "lbs": 0.28
+            }
+        ],
+        "hops": [
+            {
+                "name": "Waimea",
+                "amount": 15.0,
+                "when": "Start",
+                "attribute": "Bitter"
+            },
+            {
+                "name": "Saaz",
+                "amount": 12.5,
+                "when": "Middle",
+                "attribute": "Flavour"
+            },
+            {
+                "name": "Fuggles",
+                "amount": 12.5,
+                "when": "Middle",
+                "attribute": "Flavour"
+            }
+        ],
+        "yeasts": [
+            {
+                "name": "Wyeast 3787 - Trappist High Gravity\u0099"
+            }
+        ],
+        "alternativeDescription": null
+    },
+    "methodTimings": {
+        "mashTemps": [
+            {
+                "celsius": 65.0,
+                "fahrenheit": 149.0,
+                "time": 75.0
+            }
+        ],
+        "mashTips": [],
+        "fermentation": {
+            "celsius": 21.0,
+            "fahrenheit": 21.0,
+            "tips": []
+        },
+        "twists": [
+            {
+                "name": "Coffee Beans",
+                "amount": 250.0,
+                "when": null
+            },
+            {
+                "name": "Raisins",
+                "amount": 90.0,
+                "when": null
+            },
+            {
+                "name": "Dark sugar",
+                "amount": 140.0,
+                "when": null
+            }
+        ]
+    },
+    "packaging": "Bottle",
+    "parsingErrors": null
+}

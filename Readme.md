@@ -27,9 +27,9 @@ python -m pip install -r requirements.txt
 ```
 
 ## Run the script
-The [main.py](Sources/main.py) is part of a larger python package and thus shall be called as a python module like this :
+The [dbextractor.py](Sources/dbextractor.py) is part of a larger python package and thus shall be called as a python module like this :
 ```bash
-python -m Sources.main
+python -m Sources.dbextractor
 ```
 
 It will first download the pdf file locally and cache it in the ***.cache*** directory (created upon first run), so that we don't need to download it anymore after that.
@@ -52,3 +52,13 @@ python -m Sources.ScriptingTools.patcher Patches Sources/.cache/deployed/recipes
 ```
 
 It automatically handles recipes patching for you and normally you end up with a 100% processed datasets with all values up-to-date !
+
+## Run database reverse indexing
+Once the whole database has been patched, we can run the db reverse indexing to ease further use of the database by pre-calculating reverse indices.
+This can be achieved using this script : [dbanalyser.py](Sources/dbanalyser.py)
+
+```bash
+python -m Sources.dbanalyser Sources/.cache/deployed/recipes/all_recipes.json Sources/.cache/deployed/dbanalysis
+```
+
+It will create lots of new json files which contain reverse mappings, items list and sorted lists (used to find issues in the database itself, Patches folder saw a big increase in patches after I wrote the dbanalysis tools).

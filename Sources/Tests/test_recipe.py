@@ -1,6 +1,6 @@
 import re
 import unittest
-from ..main import pre_process_malts, TextElement, TextElement, group_in_distinct_columns
+from ..dbextractor import pre_process_malts, TextElement, TextElement, group_in_distinct_columns
 
 class TestRecipe(unittest.TestCase) :
     def test_pre_process_malts_simple_case(self) :

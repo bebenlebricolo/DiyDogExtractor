@@ -1,0 +1,51 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Module",
+            "type": "python",
+            "request": "launch",
+            "module": "Sources.dbextractor",
+            "justMyCode": false,
+            "args": [
+                "false",
+                "true",
+                "true"
+            ]
+        },
+        {
+            "name": "Python: Scripting Tools",
+            "type": "python",
+            "request": "launch",
+            "module": "Sources.ScriptingTools.copytool",
+            "justMyCode": false,
+            "args": [
+                "silextract",
+                "Sources/.cache/images",
+                "Sources/.cache/extracted_silhouettes"
+            ]
+        },
+        {
+            "name": "Python: DB Analyser",
+            "type": "python",
+            "request": "launch",
+            "module": "Sources.ScriptingTools.dbanalyser",
+            "justMyCode": false,
+            "args": [
+                "Sources/.cache/deployed/recipes/all_recipes.json",
+                "Sources/.cache/deployed/dbanalysis"
+            ]
+        },
+        {
+            "name": "Python: Current File",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "justMyCode": false
+        }
+    ]
+}

@@ -1,0 +1,139 @@
+{
+    "name": "INTERSTELLAR",
+    "subtitle": "",
+    "number": 138,
+    "tags": [
+        "2013 PROTOTYPE RED RYE IPA"
+    ],
+    "firstBrewed": "NOVEMBER 2013",
+    "image": {
+        "kind": "FileSource",
+        "path": "../images/beer_138.png"
+    },
+    "pdfPage": {
+        "kind": "FileSource",
+        "path": "../pdf_pages/page_138.pdf"
+    },
+    "description": "Interstellar is a Red Rye IPA with spicy rye flavours from the malt and with great all-round spicy, fruity and earthy hop aromas from the use of Willamette and Amarillo.",
+    "brewersTip": "Be careful with the rye malt in the run off. It can lead to stuck mashes and extended collection periods.",
+    "basics": {
+        "volume": {
+            "litres": 20.0,
+            "galons": 5.0
+        },
+        "boilVolume": {
+            "litres": 25.0,
+            "galons": 6.6
+        },
+        "abv": 6.5,
+        "targetOg": 1059.0,
+        "targetFg": 1011.0,
+        "ebc": 50.0,
+        "ibu": 55.0,
+        "srm": 25.0,
+        "ph": 4.4,
+        "attenuationLevel": 81.4
+    },
+    "foodPairings": [
+        "Oak chip smoked salmon",
+        "Sticky spicy barbecue ribs",
+        "Scottish tablet"
+    ],
+    "ingredients": {
+        "malts": [
+            {
+                "name": "Extra Pale",
+                "kgs": 3.81,
+                "lbs": 8.4
+            },
+            {
+                "name": "Rye",
+                "kgs": 0.5,
+                "lbs": 1.1
+            },
+            {
+                "name": "Crystal 150",
+                "kgs": 0.56,
+                "lbs": 1.24
+            },
+            {
+                "name": "Dark Crystal",
+                "kgs": 0.19,
+                "lbs": 0.41
+            },
+            {
+                "name": "Acidulated Malt",
+                "kgs": 0.13,
+                "lbs": 0.28
+            }
+        ],
+        "hops": [
+            {
+                "name": "Magnum",
+                "amount": 25.0,
+                "when": "Start",
+                "attribute": "Bitter"
+            },
+            {
+                "name": "Willamette",
+                "amount": 12.5,
+                "when": "Middle",
+                "attribute": "Flavour"
+            },
+            {
+                "name": "Amarillo",
+                "amount": 12.5,
+                "when": "Middle",
+                "attribute": "Flavour"
+            },
+            {
+                "name": "Willamette",
+                "amount": 25.0,
+                "when": "End",
+                "attribute": "Flavour"
+            },
+            {
+                "name": "Amarillo",
+                "amount": 25.0,
+                "when": "End",
+                "attribute": "Flavour"
+            },
+            {
+                "name": "Amarillo",
+                "amount": 125.0,
+                "when": "Dry Hop",
+                "attribute": "Aroma"
+            },
+            {
+                "name": "Willamette",
+                "amount": 125.0,
+                "when": "Dry Hop",
+                "attribute": "Aroma"
+            }
+        ],
+        "yeasts": [
+            {
+                "name": "Wyeast 1056 - American Ale\u0099"
+            }
+        ],
+        "alternativeDescription": null
+    },
+    "methodTimings": {
+        "mashTemps": [
+            {
+                "celsius": 65.0,
+                "fahrenheit": 149.0,
+                "time": 75.0
+            }
+        ],
+        "mashTips": [],
+        "fermentation": {
+            "celsius": 19.0,
+            "fahrenheit": 19.0,
+            "tips": []
+        },
+        "twists": null
+    },
+    "packaging": "Bottle",
+    "parsingErrors": null
+}

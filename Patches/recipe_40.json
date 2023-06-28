@@ -1,0 +1,117 @@
+{
+    "name": "SKULL CANDY",
+    "subtitle": "",
+    "number": 40,
+    "tags": [
+        "PACIFIC HOPPED AMBER BITTER"
+    ],
+    "firstBrewed": "FEBRUARY 2010",
+    "image": {
+        "kind": "FileSource",
+        "path": "../images/beer_40.png"
+    },
+    "pdfPage": {
+        "kind": "FileSource",
+        "path": "../pdf_pages/page_40.pdf"
+    },
+    "description": "The first beer that we brewed on our newly commissioned 5000 litre brewhouse in Fraserburgh 2009. A beer with the malt and body of an English bitter, but the heart and soul of vibrant citrus US hops.",
+    "brewersTip": "Make sure your hops are well broken up and mixed in when added to the kettle for aroma additions. The wort is not boiling so is not agitating the hops to allow mixing. If the hops aren't steeped properly in the wort you won't get the maximum flavour impact.",
+    "basics": {
+        "volume": {
+            "litres": 20.0,
+            "galons": 5.0
+        },
+        "boilVolume": {
+            "litres": 25.0,
+            "galons": 6.6
+        },
+        "abv": 3.5,
+        "targetOg": 1038.0,
+        "targetFg": 1012.0,
+        "ebc": 50.0,
+        "ibu": 33.0,
+        "srm": 25.0,
+        "ph": 4.4,
+        "attenuationLevel": 68.4
+    },
+    "foodPairings": [
+        "Haggis bon bons",
+        "Rosemary and lemon roast chicken",
+        "Oatmeal and cranberry cookies"
+    ],
+    "ingredients": {
+        "malts": [
+            {
+                "name": "Extra Pale",
+                "kgs": 2.81,
+                "lbs": 6.19
+            },
+            {
+                "name": "Caramalt",
+                "kgs": 0.63,
+                "lbs": 1.38
+            },
+            {
+                "name": "Crystal 120",
+                "kgs": 0.31,
+                "lbs": 0.69
+            }
+        ],
+        "hops": [
+            {
+                "name": "Cascade",
+                "amount": 25.0,
+                "when": "Start",
+                "attribute": "Bitter"
+            },
+            {
+                "name": "Cascade",
+                "amount": 18.8,
+                "when": "End",
+                "attribute": "Flavour"
+            },
+            {
+                "name": "Centennial",
+                "amount": 18.8,
+                "when": "End",
+                "attribute": "Flavour"
+            },
+            {
+                "name": "Amarillo",
+                "amount": 25.0,
+                "when": "End",
+                "attribute": "Flavour"
+            },
+            {
+                "name": "Simcoe",
+                "amount": 31.3,
+                "when": "End",
+                "attribute": "Flavour"
+            }
+        ],
+        "yeasts": [
+            {
+                "name": "Wyeast 1056 - American Ale\u0099"
+            }
+        ],
+        "alternativeDescription": null
+    },
+    "methodTimings": {
+        "mashTemps": [
+            {
+                "celsius": 65.0,
+                "fahrenheit": 149.0,
+                "time": 75.0
+            }
+        ],
+        "mashTips": [],
+        "fermentation": {
+            "celsius": 19.0,
+            "fahrenheit": 19.0,
+            "tips": []
+        },
+        "twists": null
+    },
+    "packaging": "Keg",
+    "parsingErrors": null
+}

@@ -13,7 +13,7 @@
     },
     "pdfPage": {
         "kind": "FileSource",
-        "path": "../pdf_pages/beer_250.pdf"
+        "path": "../pdf_pages/page_250.pdf"
     },
     "description": "A 7.2% rye IPA loaded with grapefruit notes, pithy citrus, and huge resinous bitterness, with rye character. The Centennial and Columbus flavours are amplified by the spicy, dry rye.",
     "brewersTip": "Be prepared for a long sparge as the rye content is really high.",

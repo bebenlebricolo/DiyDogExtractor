@@ -1,0 +1,172 @@
+{
+    "name": "B-SIDES \u0096 WHISKY SOUR",
+    "subtitle": "",
+    "number": 188,
+    "tags": [
+        "Pilot Brew \u0096 Deconstructed Whisky Sour"
+    ],
+    "firstBrewed": "MARCH 2015",
+    "image": {
+        "kind": "FileSource",
+        "path": "../images/beer_188.png"
+    },
+    "pdfPage": {
+        "kind": "FileSource",
+        "path": "../pdf_pages/page_188.pdf"
+    },
+    "description": "Deconstructed whisky sour, reconstructed as a beer.",
+    "brewersTip": "Get the pH as low as possible with the kettle sour, pH of 3.2-3.5 is best.",
+    "basics": {
+        "volume": {
+            "litres": 20.0,
+            "galons": 5.0
+        },
+        "boilVolume": {
+            "litres": 25.0,
+            "galons": 6.6
+        },
+        "abv": 7.0,
+        "targetOg": 1081.0,
+        "targetFg": 1021.0,
+        "ebc": 12.0,
+        "ibu": 20.0,
+        "srm": 6.0,
+        "ph": 3.2,
+        "attenuationLevel": 74.0
+    },
+    "foodPairings": [
+        "Potted fresh & smoked salmon",
+        "Spiced nut loaf",
+        "Lemon poppyseed donuts"
+    ],
+    "ingredients": {
+        "malts": [
+            {
+                "name": "Extra Pale",
+                "kgs": 6.88,
+                "lbs": 15.14
+            },
+            {
+                "name": "Acidulated Malt",
+                "kgs": 1.88,
+                "lbs": 4.13
+            },
+            {
+                "name": "Wheat Malt",
+                "kgs": 1.25,
+                "lbs": 2.75
+            },
+            {
+                "name": "Rye Malt",
+                "kgs": 0.25,
+                "lbs": 0.55
+            },
+            {
+                "name": "Special W",
+                "kgs": 0.05,
+                "lbs": 0.11
+            }
+        ],
+        "hops": [
+            {
+                "name": "Amarillo",
+                "amount": 8.5,
+                "when": "Start",
+                "attribute": "Bitter"
+            },
+            {
+                "name": "Citra",
+                "amount": 8.5,
+                "when": "Start",
+                "attribute": "Bitter"
+            },
+            {
+                "name": "Simcoe",
+                "amount": 8.5,
+                "when": "Start",
+                "attribute": "Bitter"
+            },
+            {
+                "name": "Amarillo",
+                "amount": 5.0,
+                "when": "End",
+                "attribute": "Flavour"
+            },
+            {
+                "name": "Citra",
+                "amount": 5.0,
+                "when": "End",
+                "attribute": "Flavour"
+            },
+            {
+                "name": "Simcoe",
+                "amount": 5.0,
+                "when": "End",
+                "attribute": "Flavour"
+            },
+            {
+                "name": "Amarillo",
+                "amount": 1.5,
+                "when": "Dry Hop",
+                "attribute": "Aroma"
+            },
+            {
+                "name": "Citra",
+                "amount": 1.5,
+                "when": "Dry Hop",
+                "attribute": "Aroma"
+            },
+            {
+                "name": "Simcoe",
+                "amount": 1.5,
+                "when": "Dry Hop",
+                "attribute": "Aroma"
+            }
+        ],
+        "yeasts": [
+            {
+                "name": "Wyeast 1272 - American Ale II\u0099"
+            }
+        ],
+        "alternativeDescription": null
+    },
+    "methodTimings": {
+        "mashTemps": [
+            {
+                "celsius": 60.0,
+                "fahrenheit": 140.0,
+                "time": 10.0
+            },
+            {
+                "celsius": 65.0,
+                "fahrenheit": 149.0,
+                "time": 30.0
+            },
+            {
+                "celsius": 72.0,
+                "fahrenheit": 162.0,
+                "time": 10.0
+            },
+            {
+                "celsius": 78.0,
+                "fahrenheit": 172.0,
+                "time": 5.0
+            }
+        ],
+        "mashTips": [],
+        "fermentation": {
+            "celsius": 19.0,
+            "fahrenheit": 19.0,
+            "tips": []
+        },
+        "twists": [
+            {
+                "name": "Kettle Soured",
+                "amount": null,
+                "when": null
+            }
+        ]
+    },
+    "packaging": "Keg",
+    "parsingErrors": null
+}
