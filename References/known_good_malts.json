@@ -1,0 +1,325 @@
+{
+    "malts": [
+        {
+            "name" : "Acidulated Malt",
+            "aliases" : [
+                "Acidulated"
+            ],
+            "manufacturer":"Weyermann",
+            "url":"https://www.weyermann.de/en-gb/product/weyermann-acidulated-malt-3/"
+        },
+        {
+            "name" : "Amber Malt",
+            "manufacturer":"Simpsons",
+            "url":"https://www.simpsonsmalt.co.uk/our-malts/amber-malt/"
+        },
+        {
+            "name" : "Black Malt",
+            "manufacturer":"Simpsons",
+            "url" : "https://www.simpsonsmalt.co.uk/our-malts/black-malt/"
+        },
+        {
+            "name" : "Brown Malt",
+            "manufacturer":"Simpsons",
+            "url":"https://www.simpsonsmalt.co.uk/our-malts/brown-malt/"
+        },
+        {
+            "name" : "CaraMalt",
+            "manufacturer" : "Weyermann",
+            "aliases":[
+                "Cara Malt"
+            ]
+        },
+        {
+            "name" : "CaraPils",
+            "manufacturer" : "Weyermann",
+            "url":"https://www.weyermann.de/en-gb/product/weyermann-carapils-2/"
+        },
+        {
+            "name" : "CaraAroma",
+            "manufacturer" : "Weyermann",
+            "url" : "https://www.weyermann.de/en-us/product/weyermann-caraaroma-5/"
+        },
+        {
+            "name" : "CaraHell",
+            "manufacturer" : "Weyermann",
+            "url" : "https://www.weyermann.de/en-us/product/weyermann-carahell-4/"
+        },
+        {
+            "name" : "CaraRed",
+            "manufacturer" : "Weyermann",
+            "url" : "https://www.weyermann.de/en-us/product/weyermann-carared-5/"
+        },
+        {
+            "name" : "CaraMunich I",
+            "manufacturer" : "Weyermann",
+            "aliases" : [
+                "CaraMunich Type 1"
+            ],
+            "url":"https://www.weyermann.de/en-gb/product/weyermann-caramunich-type-1-5/"
+        },
+        {
+            "name" : "CaraMunich II",
+            "manufacturer" : "Weyermann",
+            "aliases" : [
+                "CaraMunich Type 2"
+            ],
+            "url":"https://www.weyermann.de/en-us/product/weyermann-caramunich-type-2-2/"
+        },
+        {
+            "name" : "CaraMunich III",
+            "manufacturer" : "Weyermann",
+            "aliases" : [
+                "CaraMunich Type 3"
+            ],
+            "url":"https://www.weyermann.de/en-gb/product/weyermann-caramunich-type-3-3/"
+        },
+        {
+            "name" : "Carafa Special I",
+            "manufacturer" : "Weyermann",
+            "aliases":[
+                "Carafa Special Type 1"
+            ],
+            "url": "https://www.weyermann.de/en-us/product/weyermann-carafa-special-type-3-6/"
+        },
+        {
+            "name" : "Carafa Special II",
+            "manufacturer" : "Weyermann",
+            "aliases":[
+                "Carafa Special Type 2"
+            ],
+            "url": "https://www.weyermann.de/en-us/product/weyermann-carafa-special-type-3-6/"
+        },
+        {
+            "name" : "Carafa Special III",
+            "manufacturer" : "Weyermann",
+            "aliases":[
+                "Carafa Special Type 3"
+            ],
+            "url": "https://www.weyermann.de/en-us/product/weyermann-carafa-special-type-3-6/"
+        },
+        {
+            "name" : "Chocolate Malt",
+            "manufacturer":"Simpsons",
+            "url":"https://www.simpsonsmalt.co.uk/our-malts/chocolate-malt/"
+        },
+        {
+            "name" : "Chocolate Wheat Malt",
+            "manufacturer" : "Weyermann",
+            "url" : "https://www.weyermann.de/en-us/product/weyermann-chocolate-wheat-malt-2/"
+        },
+        {
+            "name" : "Crystal",
+            "manufacturer" : "Any"
+        },
+        {
+            "name" : "Crystal 120",
+            "manufacturer" : "Any"
+        },
+        {
+            "name" : "Crystal 150",
+            "manufacturer" : "Any"
+        },
+        {
+            "name" : "Crystal Dark",
+            "manufacturer" : "Any"
+        },
+        {
+            "name" : "Crystal Dark 350 - 400",
+            "manufacturer" : "Any"
+        },
+        {
+            "name" : "Double Roast Crystal",
+            "manufacturer" : "Any"
+        },
+        {
+            "name" : "Crystal Medium",
+            "manufacturer" : "Simpsons",
+            "url":"https://www.simpsonsmalt.co.uk/our-malts/crystal-medium/"
+        },
+        {
+            "name" : "Simpsons DRC",
+            "manufacturer" : "Simpsons",
+            "url":"https://www.simpsonsmalt.co.uk/our-malts/simpsons-drc/"
+        },
+        {
+            "name" : "Dextrin",
+            "manufacturer" : "Simpsons",
+            "url":"https://www.simpsonsmalt.co.uk/our-malts/dextrin-malt/"
+        },
+        {
+            "name" : "Dextrose",
+            "manufacturer" : "Any"
+        },
+        {
+            "name" : "Dry Malt Extract",
+            "manufacturer" : "Any"
+        },
+        {
+            "name" : "English Cara Malt",
+            "manufacturer" : "Simpsons",
+            "url" :  "https://www.simpsonsmalt.co.uk/our-malts/premium-english-caramalt/"
+        },
+        {
+            "name" : "Extra Dark Crystal",
+            "manufacturer" : "Simpsons",
+            "url" :  "https://www.simpsonsmalt.co.uk/our-malts/crystal-extra-dark/"
+        },
+        {
+            "name" : "Extra Pale",
+            "manufacturer" : "Simpsons",
+            "url" :  "https://www.simpsonsmalt.co.uk/our-malts/extra-pale-ale-malt/"
+        },
+        {
+            "name" : "Extra Pale - Maris Otter",
+            "manufacturer" : "Crisp",
+            "url" :  "https://crispmalt.com/malts/extra-pale-maris-otter-malt/"
+        },
+        {
+            "name" : "Extra Pale - Spring Blend",
+            "manufacturer" : "Muntons",
+            "url" :  "https://www.muntons-inc.com/product/extra-pale-planet-malt-spring/"
+        },
+        {
+            "name" : "Flaked Barley"
+        },
+        {
+            "name" : "Flaked Malted Oats"
+        },
+        {
+            "name" : "Flaked Oat"
+        },
+        {
+            "name" : "Flaked Oat Malt"
+        },
+        {
+            "name" : "Golden Naked Oats"
+        },
+        {
+            "name" : "Lager Malt",
+            "manufacturer" : "Simpsons",
+            "url" :  "https://www.simpsonsmalt.co.uk/our-malts/finest-lager-malt/"
+        },
+        {
+            "name" : "Lager Malt",
+            "manufacturer" : "Simpsons",
+            "url" :  "https://www.simpsonsmalt.co.uk/our-malts/finest-lager-malt/"
+        },
+        {
+            "name" : "Light Crystal",
+            "manufacturer":"Crisp",
+            "url":"https://crispmalt.com/malts/light-crystal-crystal-150/"
+        },
+        {
+            "name" : "Maris Otter",
+            "manufacturer":"Simpsons",
+            "url":"https://www.simpsonsmalt.co.uk/our-malts/finest-pale-ale-maris-otter/"
+        },
+        {
+            "name" : "Munich Malt",
+            "manufacturer":"Weyermann",
+            "aliases":[
+                "Munich Malt Type 1"
+            ],
+            "url":"https://www.weyermann.de/en-us/product/weyermann-munich-malt-type-1-2/"
+        },
+        {
+            "name" : "Munich Malt I",
+            "manufacturer":"Weyermann",
+            "aliases":[
+                "Munich Malt Type 1"
+            ],
+            "url":"https://www.weyermann.de/en-us/product/weyermann-munich-malt-type-1-2/"
+        },
+        {
+            "name" : "Munich Malt II",
+            "manufacturer":"Weyermann",
+            "aliases":[
+                "Munich Malt Type 2"
+            ],
+            "url":"https://www.weyermann.de/en-gb/product/weyermann-munich-malt-type-2/"
+        },
+        {
+            "name" : "Oat Husks"
+        },
+        {
+            "name" : "Oats"
+        },
+        {
+            "name" : "Pale Ale",
+            "manufacturer":"Weyermann",
+            "url":"https://www.weyermann.de/en-us/product/weyermann-pale-ale-malt-2/"
+        },
+        {
+            "name" : "Pale Ale Propino",
+            "manufacturer":"Muntons",
+            "url":"https://www.muntons-inc.com/product/propino-pale-ale-malt-spring/"
+        },
+        {
+            "name" : "Pale Chocolate",
+            "manufacturer":"Simpsons",
+            "url":"https://www.simpsonsmalt.co.uk/our-malts/pale-chocolate/"
+        },
+        {
+            "name" : "Peated Malt"
+        },
+        {
+            "name" : "Pilsner Malt",
+            "manufacturer":"Weyermann",
+            "url":"https://www.weyermann.de/en-us/product/weyermann-pilsner-malt-2/"
+        },
+        {
+            "name" : "Pinhead Oats"
+        },
+        {
+            "name" : "Popcorn"
+        },
+        {
+            "name" : "Premium English Cara",
+            "manufacturer":"Simpsons",
+            "url": "https://www.simpsonsmalt.co.uk/our-malts/premium-english-caramalt/"
+        },
+        {
+            "name" : "Raw Wheat"
+        },
+        {
+            "name" : "Roasted Barley Malt",
+            "manufacturer":"Crisp",
+            "url": "https://crispmalt.com/malts/roast-barley/"
+        },
+        {
+            "name" : "Roasted Barley Malt",
+            "manufacturer":"Crisp",
+            "url": "https://crispmalt.com/malts/roast-barley/"
+        },
+        {
+            "name" : "Rye Malt",
+            "manufacturer":"Weyermann",
+            "url": "https://www.weyermann.de/en-us/product/weyermann-rye-malt-pale-4/"
+        },
+        {
+            "name" : "Rye",
+            "manufacturer":"Crisp",
+            "url": "https://crispmalt.com/malts/rye-malt/"
+        },
+        {
+            "name" : "Beech Smoked Malt",
+            "manufacturer":"Weyermann",
+            "url": "https://www.weyermann.de/en-gb/product/weyermann-beech-smoked-barley-malt/"
+        },
+        {
+            "name" : "Torrefied Wheat"
+        },
+        {
+            "name" : "Wheat"
+        },
+        {
+            "name" : "Torrefied Barley"
+        },
+        {
+            "name" : "Vienna Malt",
+            "manufacturer" : "Weyermann",
+            "url": "https://www.weyermann.de/en-gb/product/weyermann-vienna-malt/"
+        }
+    ]
+}
