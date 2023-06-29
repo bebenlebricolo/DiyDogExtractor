@@ -42,15 +42,12 @@ class YeastMapping(BaseMapping) :
     pass
 
 @dataclass
-class StyleMapping(BaseMapping) :
+class TagMapping(BaseMapping) :
     pass
 
 @dataclass
 class FoodPairingMapping(BaseMapping) :
     pass
-
-def usage() -> str :
-    return ""
 
 def read_all_recipes(input_file : Path) -> list[rcp.Recipe] :
     all_recipes : list[rcp.Recipe] = []
@@ -111,23 +108,23 @@ def extract_yeasts(all_recipes : list[rcp.Recipe]) -> tuple[list[str], list[Yeas
 
     return (yeasts_list, yeasts_mapping_list)
 
-def extract_styles(all_recipes : list[rcp.Recipe]) -> tuple[list[str], list[StyleMapping]] :
-    styles_list : list[str] = [] # List of styles, ordered by name
-    styles_mapping_list : list[StyleMapping] = []
+def extract_tags(all_recipes : list[rcp.Recipe]) -> tuple[list[str], list[TagMapping]] :
+    tags_list : list[str] = [] # List of tags, ordered by name
+    tags_mapping_list : list[TagMapping] = []
     for recipe in all_recipes :
         if recipe.tags.value is None :
             continue
-        for style in recipe.tags.value :
-            if not style in styles_list :
-                styles_list.append(style)
-                styles_mapping_list.append(StyleMapping(style, [recipe.number.value]))
+        for tag in recipe.tags.value :
+            if not tag in tags_list :
+                tags_list.append(tag)
+                tags_mapping_list.append(TagMapping(tag, [recipe.number.value]))
             else:
-                # Find the mapped style
-                style_mapping = [x for x in styles_mapping_list if x.name == style][0]
-                if recipe.number.value not in style_mapping.found_in_beers :
-                    style_mapping.found_in_beers.append(recipe.number.value)
+                # Find the mapped tag
+                tag_mapping = [x for x in tags_mapping_list if x.name == tag][0]
+                if recipe.number.value not in tag_mapping.found_in_beers :
+                    tag_mapping.found_in_beers.append(recipe.number.value)
 
-    return (styles_list, styles_mapping_list)
+    return (tags_list, tags_mapping_list)
 
 def extract_food_pairing(all_recipes : list[rcp.Recipe]) -> tuple[list[str], list[FoodPairingMapping]] :
     fps_list : list[str] = [] # List of food pairings, ordered by name
@@ -168,7 +165,8 @@ def dump_dbs(name_list : list[str], content_mapping : list[BaseMapping], db_base
         json.dump({db_basename : content_rv_db_json}, file, indent=4)
 
 def main(args : list[str]):
-    parser = argparse.ArgumentParser("DB Analyser", usage=usage(), description="Analyses an existing extracted database and produces reversed indexed db by properties.")
+    usage_str = "Usage : python -m Sources.dbanalyser [input_file] [output_file]"
+    parser = argparse.ArgumentParser("DB Analyser", usage=usage_str, description="Analyses an existing extracted database and produces reversed indexed db by properties.")
     parser.add_argument("input_file", help="Input file (all_recipes.json) where db is stored as json text")
     parser.add_argument("output_directory", help="Output directory where analyzed reversed db will be written")
 
@@ -198,8 +196,8 @@ def main(args : list[str]):
     (yeasts_list, yeasts_mappings) = extract_yeasts(all_recipes)
     logger.log("-> Ok")
 
-    logger.log("Extracting styles data ...")
-    (styles_list, styles_mappings) = extract_styles(all_recipes)
+    logger.log("Extracting tags data ...")
+    (tags_list, tags_mappings) = extract_tags(all_recipes)
     logger.log("-> Ok")
 
     logger.log("Extracting food pairing data ...")
@@ -218,8 +216,8 @@ def main(args : list[str]):
     dump_dbs(yeasts_list, cast(list[BaseMapping], yeasts_mappings), "yeasts", output_directory)
     logger.log("-> Ok")
 
-    logger.log("Dumping databases (styles)")
-    dump_dbs(styles_list, cast(list[BaseMapping], styles_mappings), "styles", output_directory)
+    logger.log("Dumping databases (tags)")
+    dump_dbs(tags_list, cast(list[BaseMapping], tags_mappings), "tags", output_directory)
     logger.log("-> Ok")
 
     logger.log("Dumping databases (food pairings)")

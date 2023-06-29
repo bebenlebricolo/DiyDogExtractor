@@ -181,12 +181,17 @@
                 "Double IPA"
             ],
             "category": "India Pale Ales",
-            "url": "https://www.beeradvocate.com/beer/styles/140/"
+            "url": "https://beerandbrewing.com/dictionary/8fyS37LPLo/"
         },
         {
             "name": "Milkshake IPA",
             "category": "India Pale Ales",
             "url": "https://www.beeradvocate.com/beer/styles/140/"
+        },
+        {
+            "name": "India Pale Ale",
+            "category": "India Pale Ales",
+            "url": ""
         },
         {
             "name": "New England IPA",
@@ -491,6 +496,9 @@
         },
         {
             "name": "Russian Imperial Stout",
+            "aliases":[
+                "Imperial Stout"
+            ],
             "category": "Stouts",
             "url": "https://www.beeradvocate.com/beer/styles/84/"
         },
