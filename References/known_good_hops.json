@@ -1,0 +1,291 @@
+{
+    "hops": [
+        {
+            "name" : "Ahtanum",
+            "url" : "https://beermaverick.com/hop/ahtanum/"
+        },
+        {
+            "name" : "Amarillo",
+            "url" : "https://beermaverick.com/hop/amarillo/"
+        },
+        {
+            "name" : "Apollo",
+            "url" : "https://beermaverick.com/hop/apollo/"
+        },
+        {
+            "name" : "Ariana",
+            "url" : "https://beermaverick.com/hop/ariana/"
+        },
+        {
+            "name" : "Aurora",
+            "url" : "https://beermaverick.com/hop/aurora/"
+        },
+        {
+            "name" : "Mandarina Bavaria",
+            "url" : "https://beermaverick.com/hop/mandarina-bavaria/"
+        },
+        {
+            "name" : "Bobek",
+            "url" : "https://beermaverick.com/hop/bobek/"
+        },
+        {
+            "name" : "Bramling Cross",
+            "url" : "https://beermaverick.com/hop/bramling-cross/"
+        },
+        {
+            "name" : "Bravo",
+            "url" : "https://beermaverick.com/hop/bravo/"
+        },
+        {
+            "name" : "Callista",
+            "url" : "https://beermaverick.com/hop/callista/"
+        },
+        {
+            "name" : "Cascade",
+            "aliases" : [
+                "German Cascade"
+            ],
+            "url" : "https://beermaverick.com/hop/cascade/"
+        },
+        {
+            "name" : "Centennial",
+            "url" : "https://beermaverick.com/hop/centennial/"
+        },
+        {
+            "name" : "Challenger",
+            "url" : "https://beermaverick.com/hop/challenger/"
+        },
+        {
+            "name" : "Chinook",
+            "url" : "https://beermaverick.com/hop/chinook/"
+        },
+        {
+            "name" : "Citra",
+            "url" : "https://beermaverick.com/hop/citra/"
+        },
+        {
+            "name" : "Columbus",
+            "url" : "https://beermaverick.com/hop/columbus/"
+        },
+        {
+            "name" : "Columbus Extract",
+            "url" : "https://beermaverick.com/hop/colombus/"
+        },
+        {
+            "name" : "Comet",
+            "aliases" : [
+                "German Comet"
+            ],
+            "url" : "https://beermaverick.com/hop/comet/"
+        },
+        {
+            "name" : "Crystal",
+            "url" : "https://beermaverick.com/hop/crystal/"
+        },
+        {
+            "name" : "Dana",
+            "url" : "https://beermaverick.com/hop/dana/"
+        },
+        {
+            "name" : "Equinox",
+            "aliases" : [
+                "EXP 366",
+                "HBC 366"
+            ],
+            "url" : "https://beermaverick.com/hop/equinox/"
+        },
+        {
+            "name" : "East Kent Goldings",
+            "url" : "https://beermaverick.com/hop/east-kent-goldings/"
+        },
+        {
+            "name" : "El Dorado",
+            "url" : "https://beermaverick.com/hop/el-dorado/"
+        },
+        {
+            "name" : "Ella",
+            "url" : "https://beermaverick.com/hop/ella/"
+        },
+        {
+            "name" : "Enigma",
+            "url" : "https://beermaverick.com/hop/enigma/"
+        },
+        {
+            "name" : "First Gold",
+            "url" : "https://beermaverick.com/hop/first-gold/"
+        },
+        {
+            "name" : "Fuggle",
+            "url" : "https://beermaverick.com/hop/fuggle/"
+        },
+        {
+            "name" : "Galaxy",
+            "url" : "https://beermaverick.com/hop/galaxy/"
+        },
+        {
+            "name" : "Galena",
+            "url" : "https://beermaverick.com/hop/galena/"
+        },
+        {
+            "name" : "Golding",
+            "url" : "https://beermaverick.com/hop/golding/"
+        },
+        {
+            "name" : "Green Bullet",
+            "url" : "https://beermaverick.com/hop/green-bullet/"
+        },
+        {
+            "name" : "Mosaic",
+            "aliases" :[
+                "HBC 369"
+            ],
+            "url" : "https://beermaverick.com/hop/mosaic/"
+        },
+        {
+            "name" : "Sabro",
+            "aliases" : [
+                "HBC 438 "
+            ],
+            "url" : "https://beermaverick.com/hop/sabro/"
+        },
+        {
+            "name" : "Hallertau Blanc",
+            "url" : "https://beermaverick.com/hop/hallertau-blanc/"
+        },
+        {
+            "name" : "Hallertau Mittelfr\u00fch",
+            "aliases":[
+                "Mittelfruh"
+            ],
+            "url" : "https://beermaverick.com/hop/hallertau-mittelfruh/"
+        },
+        {
+            "name" : "Hallertau Taurus",
+            "url" : "https://beermaverick.com/hop/hallertau-taurus/"
+        },
+        {
+            "name" : "Herkules",
+            "url" : "https://beermaverick.com/hop/herkules/"
+        },
+        {
+            "name" : "Hersbrucker",
+            "url" : "https://beermaverick.com/hop/hersbrucker/"
+        },
+        {
+            "name" : "Huell Melon",
+            "url" : "https://beermaverick.com/hop/huell-melon/"
+        },
+        {
+            "name" : "Idaho 7",
+            "url" : "https://beermaverick.com/hop/idaho-7/"
+        },
+        {
+            "name" : "Jester",
+            "url" : "https://beermaverick.com/hop/jester/"
+        },
+        {
+            "name" : "Kohatu",
+            "url" : "https://beermaverick.com/hop/kohatu/"
+        },
+        {
+            "name" : "Liberty",
+            "url" : "https://beermaverick.com/hop/liberty/"
+        },
+        {
+            "name" : "Magnum",
+            "url" : "https://beermaverick.com/hop/magnum/"
+        },
+        {
+            "name" : "Motueka",
+            "url" : "https://beermaverick.com/hop/motueka/"
+        },
+        {
+            "name" : "Mount Hood",
+            "url" : "https://beermaverick.com/hop/mount-hood/"
+        },
+        {
+            "name" : "Nelson Sauvin",
+            "url" : "https://beermaverick.com/hop/nelson-sauvin/"
+        },
+        {
+            "name" : "Nugget",
+            "url" : "https://beermaverick.com/hop/nugget/"
+        },
+        {
+            "name" : "Pacific Gem",
+            "url" : "https://beermaverick.com/hop/pacific-gem/"
+        },
+        {
+            "name" : "Pacifica",
+            "url" : "https://beermaverick.com/hop/pacifica/"
+        },
+        {
+            "name" : "Pacific Jade",
+            "url" : "https://beermaverick.com/hop/pacific-jade/"
+        },
+        {
+            "name" : "Perle",
+            "url" : "https://beermaverick.com/hop/perle-gr/"
+        },
+        {
+            "name" : "Pioneer",
+            "url" : "https://beermaverick.com/hop/pioneer/"
+        },
+        {
+            "name" : "Saaz",
+            "url" : "https://beermaverick.com/hop/saaz-cz/"
+        },
+        {
+            "name" : "Saphir",
+            "url" : "https://beermaverick.com/hop/saphir/"
+        },
+        {
+            "name" : "Select Spalter",
+            "url" : "https://beermaverick.com/hop/spalter-select/"
+        },
+        {
+            "name" : "Simcoe",
+            "url" : "https://beermaverick.com/hop/simcoe/"
+        },
+        {
+            "name" : "Sorachi Ace",
+            "url" : "https://beermaverick.com/hop/sorachi-ace/"
+        },
+        {
+            "name" : "Sterling",
+            "url" : "https://beermaverick.com/hop/sterling/"
+        },
+        {
+            "name" : "Strisselspalt",
+            "url" : "https://beermaverick.com/hop/strisselspalt/"
+        },
+        {
+            "name" : "Styrian Goldings",
+            "url" : "https://beermaverick.com/hop/styrian-golding/"
+        },
+        {
+            "name" : "Tettnanger",
+            "url" : "https://beermaverick.com/hop/tettnanger/"
+        },
+        {
+            "name" : "Tomahawk",
+            "url" : "https://beermaverick.com/hop/tomahawk/"
+        },
+        {
+            "name" : "Triskel",
+            "url" : "https://beermaverick.com/hop/triskel/"
+        },
+        {
+            "name" : "Vic Secret",
+            "url" : "https://beermaverick.com/hop/vic-secret/"
+        },
+        {
+            "name" : "Waimea",
+            "url" : "https://beermaverick.com/hop/waimea/"
+        },
+        {
+            "name" : "Willamette",
+            "url" : "https://beermaverick.com/hop/willamette/"
+        }
+    ]
+}
