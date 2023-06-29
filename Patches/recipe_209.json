@@ -6,6 +6,7 @@
         "Fruity Berliner Weisse",
         "Raspberries And Rhubarb"
     ],
+    "style": null,
     "firstBrewed": "",
     "image": {
         "kind": "FileSource",

@@ -278,6 +278,7 @@ class PackagingType(Enum) :
 class Recipe(Jsonable) :
     name : JsonProperty[str]                            # Beer title
     subtitle : JsonProperty[str]                        # Beer subtitle, contains tags and other information
+    style : JsonOptionalProperty[str]                   # Beer style
     description : JsonProperty[str]
     number : JsonProperty[int]                          # Refers to the "#1" tag
     tags : JsonOptionalProperty[list[str]]              # tag line
@@ -323,6 +324,7 @@ class Recipe(Jsonable) :
 
     def __init__( self, name : Optional[str] = None,
                         subtitle : Optional[str] = None,
+                        style : Optional[str] = None,
                         number : Optional[int] = None,
                         tags : Optional[list[str]] = None,
                         first_brewed : Optional[str] = None,
@@ -340,6 +342,7 @@ class Recipe(Jsonable) :
         self.brewers_tip = JsonOptionalProperty("brewersTip", None)
         self.name = JsonProperty('name', "")
         self.subtitle =  JsonProperty('subtitle', "")
+        self.style =  JsonOptionalProperty('style', None)
         self.number =  JsonProperty('number', 0)
         self.tags =  JsonOptionalProperty('tags', None)
         self.first_brewed = JsonProperty("firstBrewed", "")
@@ -356,6 +359,8 @@ class Recipe(Jsonable) :
             self.description.value = description
         if subtitle :
             self.subtitle.value = subtitle
+        if style :
+            self.style.value = style
         if number :
             self.number.value = number
         if tags :
@@ -384,6 +389,7 @@ class Recipe(Jsonable) :
         return {
             self.name._prop_key : self.name.value,
             self.subtitle._prop_key : self.subtitle.value,
+            self.style._prop_key : self.style.value,
             self.number._prop_key : self.number.value,
             self.tags._prop_key : self.tags.value,
             self.first_brewed._prop_key : self.first_brewed.value,
@@ -405,6 +411,7 @@ class Recipe(Jsonable) :
         self.number.value = self.number.try_read(content, 0)
         self.tags.value = self.tags.read(content)
         self.first_brewed.value = self.first_brewed.try_read(content, "")
+        self.style.value = self.style.read(content)
 
         # Image and Original PDF page deserve special handling, as they can be both a FileRecord or Cloud Record
         image_node = self.image.get_node(content)
@@ -455,6 +462,7 @@ class Recipe(Jsonable) :
         identical &= self.name == other.name                            #type: ignore
         identical &= self.subtitle == other.subtitle                    #type: ignore
         identical &= self.number == other.number                        #type: ignore
+        identical &= self.style == other.style                          #type: ignore
         identical &= self.tags == other.tags                            #type: ignore
         identical &= self.first_brewed == other.first_brewed            #type: ignore
         identical &= self.description == other.description              #type: ignore

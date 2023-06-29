@@ -289,8 +289,8 @@ def extract_header(elements : list[TextElement], recipe : rcp.Recipe) -> rcp.Rec
             else :
                 recipe.name.value += name_comps_aligned[i].text
             consumed_elements.append(name_comps_aligned[i])
-    recipe.name.value = recipe.name.value.rstrip(" ")
-    recipe.subtitle.value = recipe.subtitle.value.rstrip(" ")
+    recipe.name.value = string.capwords(recipe.name.value.rstrip(" ").lower())
+    recipe.subtitle.value = string.capwords(recipe.subtitle.value.rstrip(" ").lower())
 
     # We need to keep track of the consumed element so that they don't fall into the tag lines
     consumed_elements.append(number_element)
@@ -404,8 +404,6 @@ def extract_header(elements : list[TextElement], recipe : rcp.Recipe) -> rcp.Rec
             if len(tag) < 5 :
                 continue
             recipe.tags.value.append(tag)
-
-
 
     return recipe
 

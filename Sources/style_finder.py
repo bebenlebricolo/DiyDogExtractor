@@ -33,11 +33,9 @@ class RefStyle(Jsonable):
         out_dict = {
             "name" : self.name,
             "category" : self.category,
-            "url" : self.url
+            "url" : self.url,
+            "aliases" : self.aliases
         }
-        if self.aliases :
-            aliases_dict = {"aliases" : self.aliases}
-            out_dict.update(**aliases_dict)
         return out_dict
 
 @dataclass
@@ -70,9 +68,7 @@ def fuzzy_search_in_ref(tag : str, styles_ref_list : list[RefStyle]) -> MostProb
 
     return MostProbableHit(style=most_probable_style, distance=max_ratio)
 
-
-def fuzzy_search_on_real_styles(styles_ref_file : Path, tags_list_file : Path, output_directory : Path, logger: Logger):
-    logger.log("Reading styles from reference file")
+def read_styles_from_file(styles_ref_file : Path) -> list[RefStyle]:
     ref_styles : list[RefStyle] = []
     with open(styles_ref_file, 'r') as file :
         content = json.load(file)
@@ -80,6 +76,13 @@ def fuzzy_search_on_real_styles(styles_ref_file : Path, tags_list_file : Path, o
             new_style = RefStyle()
             new_style.from_json(elem)
             ref_styles.append(new_style)
+
+    return ref_styles
+
+
+def fuzzy_search_on_real_styles(styles_ref_file : Path, tags_list_file : Path, output_directory : Path, logger: Logger):
+    logger.log("Reading styles from reference file")
+    ref_styles = read_styles_from_file(styles_ref_file)
 
     logger.log("Reading tags from file")
     tags_list : list[str] = []
@@ -101,6 +104,31 @@ def fuzzy_search_on_real_styles(styles_ref_file : Path, tags_list_file : Path, o
             tags_inferred_style_map.append(pair)
         else :
             rejected_tags.append(pair)
+
+def read_keywords_file(keywords_file : Path) -> list[str] :
+    # Lowercasing all elements from keywords
+    keywords : list[str] = []
+    with open(keywords_file, "r") as file :
+        content = json.load(file)
+        for elem in content :
+            keywords.append(cast(str, elem).lower())
+
+    return keywords
+
+def find_style_with_keywords(keywords : list[str], tags : list[str]) -> list[str] :
+    found_styles : list[str] = []
+    for tag in tags :
+        lowercased = tag.lower()
+
+        # Check if substring in tag, should be enough
+        for kw in keywords :
+            if kw in lowercased :
+                found_styles.append(tag)
+                # First hit already indicates the parsed tag already contains style information
+                # So that's enough
+                break
+
+    return found_styles
 
 def main(args : list[str]):
     usage_str = "Usage : python -m Sources.style_finder [styles_ref_file] [tags_list_file] [output_directory]"
@@ -134,28 +162,8 @@ def main(args : list[str]):
             tags_list.append(elem)
 
     # Lowercasing all elements from keywords
-    keywords : list[str] = []
-    with open(keywords_file, "r") as file :
-        content = json.load(file)
-        for elem in content :
-            keywords.append(cast(str, elem).lower())
-
-    found_styles : list[str] = []
-    for tag in tags_list :
-        lowercased = tag.lower()
-        if len(tag) <= 10 :
-            # Skip small tags and numbers-only
-            continue
-
-        # Check if substring in tag, should be enough
-        for kw in keywords :
-            if kw in lowercased :
-                found_styles.append(tag)
-                # First hit already indicates the parsed tag already contains style information
-                # So that's enough
-                break
-
-
+    keywords = read_keywords_file(keywords_file)
+    found_styles = find_style_with_keywords(keywords, tags_list)
 
     return 0
 

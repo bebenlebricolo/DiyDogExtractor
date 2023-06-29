@@ -6,6 +6,7 @@
     "tags": [
         "Rye India Pale Ale"
     ],
+    "style": null,
     "firstBrewed": "2016",
     "image": {
         "kind": "FileSource",
