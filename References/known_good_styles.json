@@ -1,0 +1,662 @@
+{
+    "styles": [
+        {
+            "name": "Bock",
+            "category": "Bocks",
+            "url": "https://www.beeradvocate.com/beer/styles/32/"
+        },
+        {
+            "name": "Doppelbock",
+            "category": "Bocks",
+            "url": "https://www.beeradvocate.com/beer/styles/35/"
+        },
+        {
+            "name": "Eisbock",
+            "category": "Bocks",
+            "url": "https://www.beeradvocate.com/beer/styles/36/"
+        },
+        {
+            "name": "Maibock",
+            "category": "Bocks",
+            "url": "https://www.beeradvocate.com/beer/styles/33/"
+        },
+        {
+            "name": "Weizenbock",
+            "category": "Bocks",
+            "url": "https://www.beeradvocate.com/beer/styles/92/"
+        },
+        {
+            "name": "Altbier",
+            "category": "Brown Ales",
+            "url": "https://www.beeradvocate.com/beer/styles/86/"
+        },
+        {
+            "name": "American Brown Ale",
+            "category": "Brown Ales",
+            "url": "https://www.beeradvocate.com/beer/styles/86/"
+        },
+        {
+            "name": "Belgian Dark Ale",
+            "category": "Brown Ales",
+            "url": "https://www.beeradvocate.com/beer/styles/86/"
+        },
+        {
+            "name": "English Brown Ale",
+            "category": "Brown Ales",
+            "url": "https://www.beeradvocate.com/beer/styles/74/"
+        },
+        {
+            "name": "English Dark Mild Ale",
+            "category": "Brown Ales",
+            "url": "https://www.beeradvocate.com/beer/styles/75/"
+        },
+        {
+            "name": "Dubbel",
+            "category": "Dark Ales",
+            "url": "https://www.beeradvocate.com/beer/styles/75/"
+        },
+        {
+            "name": "Roggenbier",
+            "category": "Dark Ales",
+            "url": "https://www.beeradvocate.com/beer/styles/18/"
+        },
+        {
+            "name": "Scottish Ale",
+            "category": "Dark Ales",
+            "url": "https://www.beeradvocate.com/beer/styles/68/"
+        },
+        {
+            "name": "Winter Warmer",
+            "category": "Dark Ales",
+            "url": "https://www.beeradvocate.com/beer/styles/47/"
+        },
+        {
+            "name": "American Amber",
+            "aliases": [
+                "Red Lager"
+            ],
+            "category": "Dark Lagers",
+            "url": "https://www.beeradvocate.com/beer/styles/147/"
+        },
+        {
+            "name": "Czech Amber Lager",
+            "category": "Dark Lagers",
+            "url": "https://www.beeradvocate.com/beer/styles/238/"
+        },
+        {
+            "name": "Czech Dark Lager",
+            "category": "Dark Lagers",
+            "url": "https://www.beeradvocate.com/beer/styles/240/"
+        },
+        {
+            "name": "European Dark Lager",
+            "category": "Dark Lagers",
+            "url": "https://www.beeradvocate.com/beer/styles/240/"
+        },
+        {
+            "name": "Märzen",
+            "category": "Dark Lagers",
+            "url": "https://www.beeradvocate.com/beer/styles/29/"
+        },
+        {
+            "name": "Munich Dunkel",
+            "category": "Dark Lagers",
+            "url": "https://www.beeradvocate.com/beer/styles/46/"
+        },
+        {
+            "name": "Rauchbier",
+            "category": "Dark Lagers",
+            "url": "https://www.beeradvocate.com/beer/styles/7/"
+        },
+        {
+            "name": "Schwarzbier",
+            "category": "Dark Lagers",
+            "url": "https://www.beeradvocate.com/beer/styles/31/"
+        },
+        {
+            "name": "Vienna Lager",
+            "category": "Dark Lagers",
+            "url": "https://www.beeradvocate.com/beer/styles/30/"
+        },
+        {
+            "name": "Bière de Champagne",
+            "aliases": [
+                "Bière Brut",
+                "Brut beer",
+                "Champagne Beer"
+            ],
+            "category": "Hybrid Beers",
+            "url": "https://www.beeradvocate.com/beer/styles/30/"
+        },
+        {
+            "name": "Braggot",
+            "category": "Hybrid Beers",
+            "url": "https://www.beeradvocate.com/beer/styles/114/"
+        },
+        {
+            "name": "California Common",
+            "aliases": [
+                "Steam Beer"
+            ],
+            "category": "Hybrid Beers",
+            "url": "https://www.beeradvocate.com/beer/styles/132/"
+        },
+        {
+            "name": "Cream Ale",
+            "category": "Hybrid Beers",
+            "url": "https://www.beeradvocate.com/beer/styles/6/"
+        },
+        {
+            "name": "American IPA",
+            "category": "India Pale Ales",
+            "url": "https://www.beeradvocate.com/beer/styles/116/"
+        },
+        {
+            "name": "Belgian IPA",
+            "category": "India Pale Ales",
+            "url": "https://www.beeradvocate.com/beer/styles/174/"
+        },
+        {
+            "name": "Black IPA",
+            "category": "India Pale Ales",
+            "url": "https://www.beeradvocate.com/beer/styles/175/"
+        },
+        {
+            "name": "Brut IPA",
+            "category": "India Pale Ales",
+            "url": "https://www.beeradvocate.com/beer/styles/199/"
+        },
+        {
+            "name": "English IPA",
+            "aliases": [
+                "EIPA"
+            ],
+            "category": "India Pale Ales",
+            "url": "https://www.beeradvocate.com/beer/styles/150/"
+        },
+        {
+            "name": "Imperial IPA",
+            "aliases": [
+                "DIPA",
+                "Double IPA"
+            ],
+            "category": "India Pale Ales",
+            "url": "https://www.beeradvocate.com/beer/styles/140/"
+        },
+        {
+            "name": "Milkshake IPA",
+            "category": "India Pale Ales",
+            "url": "https://www.beeradvocate.com/beer/styles/140/"
+        },
+        {
+            "name": "New England IPA",
+            "aliases": [
+                "NEIPA"
+            ],
+            "category": "India Pale Ales",
+            "url": "https://www.beeradvocate.com/beer/styles/189/"
+        },
+        {
+            "name": "American Amber",
+            "aliases": [
+                "Red Ale"
+            ],
+            "category": "Pale Ales",
+            "url": "https://www.beeradvocate.com/beer/styles/128/"
+        },
+        {
+            "name": "American Blonde Ale",
+            "category": "Pale Ales",
+            "url": "https://www.beeradvocate.com/beer/styles/99/"
+        },
+        {
+            "name": "American Pale Ale",
+            "category": "Pale Ales",
+            "url": "https://www.beeradvocate.com/beer/styles/97/"
+        },
+        {
+            "name": "Belgian Blonde Ale",
+            "category": "Pale Ales",
+            "url": "https://www.beeradvocate.com/beer/styles/190/"
+        },
+        {
+            "name": "Belgian Pale Ale",
+            "category": "Pale Ales",
+            "url": "https://www.beeradvocate.com/beer/styles/54/"
+        },
+        {
+            "name": "Bière de Garde",
+            "category": "Pale Ales",
+            "url": "https://www.beeradvocate.com/beer/styles/127/"
+        },
+        {
+            "name": "English Bitter",
+            "category": "Pale Ales",
+            "url": "https://www.beeradvocate.com/beer/styles/98/"
+        },
+        {
+            "name": "English Pale Ale",
+            "category": "Pale Ales",
+            "url": "https://www.beeradvocate.com/beer/styles/154/"
+        },
+        {
+            "name": "English Pale Mild Ale",
+            "category": "Pale Ales",
+            "url": "https://www.beeradvocate.com/beer/styles/76/"
+        },
+        {
+            "name": "Extra Special",
+            "aliases": [
+                "Strong Bitter",
+                "ESB"
+            ],
+            "category": "Pale Ales",
+            "url": "https://www.beeradvocate.com/beer/styles/66/"
+        },
+        {
+            "name": "Grisette",
+            "category": "Pale Ales",
+            "url": "https://www.beeradvocate.com/beer/styles/241/"
+        },
+        {
+            "name": "Irish Red Ale",
+            "category": "Pale Ales",
+            "url": "https://www.beeradvocate.com/beer/styles/161/"
+        },
+        {
+            "name": "Kölsch",
+            "category": "Pale Ales",
+            "url": "https://www.beeradvocate.com/beer/styles/85/"
+        },
+        {
+            "name": "Saison",
+            "category": "Pale Ales",
+            "url": "https://www.beeradvocate.com/beer/styles/129/"
+        },
+        {
+            "name": "American Adjunct Lager",
+            "category": "Pale Lagers",
+            "url": "https://www.beeradvocate.com/beer/styles/38/"
+        },
+        {
+            "name": "American Lager",
+            "category": "Pale Lagers",
+            "url": "https://www.beeradvocate.com/beer/styles/155/"
+        },
+        {
+            "name": "Bohemian Lager",
+            "aliases": [
+                "Czech Pilsner"
+            ],
+            "category": "Pale Lagers",
+            "url": "https://www.beeradvocate.com/beer/styles/40/"
+        },
+        {
+            "name": "Czech Pale Lager",
+            "category": "Pale Lagers",
+            "url": "https://www.beeradvocate.com/beer/styles/239/"
+        },
+        {
+            "name": "European Lager",
+            "aliases": [
+                "Dortmunder Export Lager"
+            ],
+            "category": "Pale Lagers",
+            "url": "https://www.beeradvocate.com/beer/styles/20/"
+        },
+        {
+            "name": "European Pale Lager",
+            "category": "Pale Lagers",
+            "url": "https://www.beeradvocate.com/beer/styles/37/"
+        },
+        {
+            "name": "European Strong Lager",
+            "category": "Pale Lagers",
+            "url": "https://www.beeradvocate.com/beer/styles/43/"
+        },
+        {
+            "name": "Festbier",
+            "aliases": [
+                "Wiesnbier"
+            ],
+            "category": "Pale Lagers",
+            "url": "https://www.beeradvocate.com/beer/styles/235/"
+        },
+        {
+            "name": "German Pilsner",
+            "category": "Pale Lagers",
+            "url": "https://www.beeradvocate.com/beer/styles/41/"
+        },
+        {
+            "name": "Helles",
+            "category": "Pale Lagers",
+            "url": "https://www.beeradvocate.com/beer/styles/21/"
+        },
+        {
+            "name": "Imperial Pilsner",
+            "category": "Pale Lagers",
+            "url": "https://www.beeradvocate.com/beer/styles/21/"
+        },
+        {
+            "name": "India Pale Lager",
+            "aliases": [
+                "IPL"
+            ],
+            "category": "Pale Lagers",
+            "url": "https://www.beeradvocate.com/beer/styles/233/"
+        },
+        {
+            "name": "Kellerbier",
+            "aliases": [
+                "Zwickelbier"
+            ],
+            "category": "Pale Lagers",
+            "url": "https://www.beeradvocate.com/beer/styles/131/"
+        },
+        {
+            "name": "Light Lager",
+            "category": "Pale Lagers",
+            "url": "https://www.beeradvocate.com/beer/styles/39/"
+        },
+        {
+            "name": "Malt Liquor",
+            "category": "Pale Lagers",
+            "url": "https://www.beeradvocate.com/beer/styles/42/"
+        },
+        {
+            "name": "American Porter",
+            "category": "Porters",
+            "url": "https://www.beeradvocate.com/beer/styles/159/"
+        },
+        {
+            "name": "Baltic Porter",
+            "category": "Porters",
+            "url": "https://www.beeradvocate.com/beer/styles/80/"
+        },
+        {
+            "name": "English Porter",
+            "category": "Porters",
+            "url": "https://www.beeradvocate.com/beer/styles/101/"
+        },
+        {
+            "name": "Imperial Porter",
+            "category": "Porters",
+            "url": "https://www.beeradvocate.com/beer/styles/101/"
+        },
+        {
+            "name": "Robust Porter",
+            "category": "Porters",
+            "url": "https://www.beeradvocate.com/beer/styles/193/"
+        },
+        {
+            "name": "Smoked Porter",
+            "category": "Porters",
+            "url": "https://www.beeradvocate.com/beer/styles/194/"
+        },
+        {
+            "name": "Chile Beer",
+            "category": "Specialty Beers",
+            "url": "https://www.beeradvocate.com/beer/styles/163/"
+        },
+        {
+            "name": "Fruit and Field Beer",
+            "category": "Specialty Beers",
+            "url": "https://www.beeradvocate.com/beer/styles/163/"
+        },
+        {
+            "name": "Gruit Ale",
+            "aliases": [
+                "Ancient Herbed Ale"
+            ],
+            "category": "Specialty Beers",
+            "url": "https://www.beeradvocate.com/beer/styles/70/"
+        },
+        {
+            "name": "Happoshu",
+            "category": "Specialty Beers",
+            "url": "https://www.beeradvocate.com/beer/styles/70/"
+        },
+        {
+            "name": "Herb and Spice Beer",
+            "category": "Specialty Beers",
+            "url": "https://www.beeradvocate.com/beer/styles/8/"
+        },
+        {
+            "name": "Japanese Rice Lager",
+            "category": "Specialty Beers",
+            "url": "https://www.beeradvocate.com/beer/styles/169/"
+        },
+        {
+            "name": "Kvass",
+            "category": "Specialty Beers",
+            "url": "https://www.beeradvocate.com/beer/styles/173/"
+        },
+        {
+            "name": "Low-Alcohol Beer",
+            "category": "Specialty Beers",
+            "url": "https://www.beeradvocate.com/beer/styles/173/"
+        },
+        {
+            "name": "Pumpkin Beer",
+            "category": "Specialty Beers",
+            "url": "https://www.beeradvocate.com/beer/styles/72/"
+        },
+        {
+            "name": "Rye Beer",
+            "category": "Specialty Beers",
+            "url": "https://www.beeradvocate.com/beer/styles/12/"
+        },
+        {
+            "name": "Sahti",
+            "category": "Specialty Beers",
+            "url": "https://www.beeradvocate.com/beer/styles/148/"
+        },
+        {
+            "name": "Smoked Beer",
+            "category": "Specialty Beers",
+            "url": "https://www.beeradvocate.com/beer/styles/11/"
+        },
+        {
+            "name": "American Imperial Stout",
+            "category": "Stouts",
+            "url": "https://www.beeradvocate.com/beer/styles/157/"
+        },
+        {
+            "name": "American Stout",
+            "category": "Stouts",
+            "url": "https://www.beeradvocate.com/beer/styles/158/"
+        },
+        {
+            "name": "English Stout",
+            "category": "Stouts",
+            "url": "https://www.beeradvocate.com/beer/styles/13/"
+        },
+        {
+            "name": "Foreign Stout",
+            "aliases": [
+                "Export Stout"
+            ],
+            "category": "Stouts",
+            "url": "https://www.beeradvocate.com/beer/styles/95/"
+        },
+        {
+            "name": "Irish Dry Stout",
+            "category": "Stouts",
+            "url": "https://www.beeradvocate.com/beer/styles/95/"
+        },
+        {
+            "name": "Oatmeal Stout",
+            "category": "Stouts",
+            "url": "https://www.beeradvocate.com/beer/styles/69/"
+        },
+        {
+            "name": "Russian Imperial Stout",
+            "category": "Stouts",
+            "url": "https://www.beeradvocate.com/beer/styles/84/"
+        },
+        {
+            "name": "Sweet Stout",
+            "aliases": [
+                "Milk Stout"
+            ],
+            "category": "Stouts",
+            "url": "https://www.beeradvocate.com/beer/styles/84/"
+        },
+        {
+            "name": "American Barleywine",
+            "category": "Strong Ales",
+            "url": "https://www.beeradvocate.com/beer/styles/19/"
+        },
+        {
+            "name": "American Strong Ale",
+            "category": "Strong Ales",
+            "url": "https://www.beeradvocate.com/beer/styles/78/"
+        },
+        {
+            "name": "Belgian Dark Strong Ale",
+            "category": "Strong Ales",
+            "url": "https://www.beeradvocate.com/beer/styles/56/"
+        },
+        {
+            "name": "Belgian Pale Strong Ale",
+            "category": "Strong Ales",
+            "url": "https://www.beeradvocate.com/beer/styles/56/"
+        },
+        {
+            "name": "English Barleywine",
+            "category": "Strong Ales",
+            "url": "https://www.beeradvocate.com/beer/styles/152/"
+        },
+        {
+            "name": "English Strong Ale",
+            "category": "Strong Ales",
+            "url": "https://www.beeradvocate.com/beer/styles/165/"
+        },
+        {
+            "name": "Imperial Red Ale",
+            "category": "Strong Ales",
+            "url": "https://www.beeradvocate.com/beer/styles/191/"
+        },
+        {
+            "name": "Old Ale",
+            "category": "Strong Ales",
+            "url": "https://www.beeradvocate.com/beer/styles/191/"
+        },
+        {
+            "name": "Quadrupel",
+            "aliases": [
+                "Quad"
+            ],
+            "category": "Strong Ales",
+            "url": "https://www.beeradvocate.com/beer/styles/142/"
+        },
+        {
+            "name": "Scotch Ale",
+            "aliases": [
+                "Wee Heavy"
+            ],
+            "category": "Strong Ales",
+            "url": "https://www.beeradvocate.com/beer/styles/77/"
+        },
+        {
+            "name": "Tripel",
+            "category": "Strong Ales",
+            "url": "https://www.beeradvocate.com/beer/styles/58/"
+        },
+        {
+            "name": "Wheatwine",
+            "category": "Strong Ales",
+            "url": "https://www.beeradvocate.com/beer/styles/60/"
+        },
+        {
+            "name": "American Dark Wheat Beer",
+            "category": "Wheat Beers",
+            "url": "https://www.beeradvocate.com/beer/styles/94/"
+        },
+        {
+            "name": "American Pale Wheat Beer",
+            "category": "Wheat Beers",
+            "url": "https://www.beeradvocate.com/beer/styles/93/"
+        },
+        {
+            "name": "Dunkelweizen",
+            "category": "Wheat Beers",
+            "url": "https://www.beeradvocate.com/beer/styles/93/"
+        },
+        {
+            "name": "Grodziskie",
+            "category": "Wheat Beers",
+            "url": "https://www.beeradvocate.com/beer/styles/236/"
+        },
+        {
+            "name": "Hefeweizen",
+            "category": "Wheat Beers",
+            "url": "https://www.beeradvocate.com/beer/styles/236/"
+        },
+        {
+            "name": "Kristallweizen",
+            "category": "Wheat Beers",
+            "url": "https://www.beeradvocate.com/beer/styles/236/"
+        },
+        {
+            "name": "Witbier",
+            "category": "Wheat Beers",
+            "url": "https://www.beeradvocate.com/beer/styles/48/"
+        },
+        {
+            "name": "Berliner Weisse",
+            "category": "Wild/Sour Beers",
+            "url": "https://www.beeradvocate.com/beer/styles/48/"
+        },
+        {
+            "name": "Brett Beer",
+            "category": "Wild/Sour Beers",
+            "url": "https://www.beeradvocate.com/beer/styles/48/"
+        },
+        {
+            "name": "Faro",
+            "category": "Wild/Sour Beers",
+            "url": "https://www.beeradvocate.com/beer/styles/15/"
+        },
+        {
+            "name": "Flanders Oud Bruin",
+            "category": "Wild/Sour Beers",
+            "url": "https://www.beeradvocate.com/beer/styles/52/"
+        },
+        {
+            "name": "Flanders Red Ale",
+            "category": "Wild/Sour Beers",
+            "url": "https://www.beeradvocate.com/beer/styles/52/"
+        },
+        {
+            "name": "Fruit Lambic",
+            "category": "Wild/Sour Beers",
+            "url": "https://www.beeradvocate.com/beer/styles/52/"
+        },
+        {
+            "name": "Fruited Kettle Sour",
+            "category": "Wild/Sour Beers",
+            "url": "https://www.beeradvocate.com/beer/styles/234/"
+        },
+        {
+            "name": "Gose",
+            "category": "Wild/Sour Beers",
+            "url": "https://www.beeradvocate.com/beer/styles/234/"
+        },
+        {
+            "name": "Gueuze",
+            "category": "Wild/Sour Beers",
+            "url": "https://www.beeradvocate.com/beer/styles/14/"
+        },
+        {
+            "name": "Lambic",
+            "category": "Wild/Sour Beers",
+            "url": "https://www.beeradvocate.com/beer/styles/14/"
+        },
+        {
+            "name": "Wild Ale",
+            "category": "Wild/Sour Beers",
+            "url": "https://www.beeradvocate.com/beer/styles/14/"
+        }
+    ]
+}
