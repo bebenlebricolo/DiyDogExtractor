@@ -72,6 +72,11 @@ class Malt(Jsonable) :
         self.kgs = self._read_prop("kgs", content, 0.0)
         self.lbs = self._read_prop("lbs", content, 0.0)
 
+# Sometimes extra ingredients are added in the "malt" section to depict ingredients that
+# are added during the mash process
+class ExtraMash(Malt):
+    pass
+
 @dataclass
 class Hop(Jsonable) :
     name : str  = ""
@@ -93,6 +98,11 @@ class Hop(Jsonable) :
         self.when = self._read_prop("when", content, "")
         self.attribute = self._read_prop("attribute", content, "")
 
+# Sometimes extra ingredients are added in the "malt" section to depict ingredients that
+# are added during the mash process
+class ExtraBoil(Hop):
+    pass
+
 @dataclass
 class Yeast(Jsonable) :
     name : str = ""
@@ -109,21 +119,32 @@ class Ingredients(Jsonable) :
     HOPS_KEY = "hops"
     YEASTS_KEY = "yeasts"
     DESCRIPTION_KEY = "alternativeDescription"
+    EXTRA_MASH = "extraMash"
+    EXTRA_BOIL = "extraBoil"
 
     malts : list[Malt] = field(default_factory=list)
     hops : list[Hop] = field(default_factory=list)
     yeasts : list[Yeast] = field(default_factory=list)
     alternative_description : Optional[str] = None
 
+    extra_mash : Optional[list[ExtraMash]] = None   # Extra mashing ingredient (such as sugar)
+    extra_boil : Optional[list[ExtraBoil]] = None   # Extra boil ingredient (such as coffee beans)
+
     def to_json(self) -> dict:
         malts_list = [x.to_json() for x in self.malts]
         hops_list = [x.to_json() for x in self.hops]
         yeast_list = [x.to_json() for x in self.yeasts]
 
+        # Optional extra fields
+        extra_mash_list = [x.to_json() for x in self.extra_mash] if self.extra_mash else None
+        extra_boil_list = [x.to_json() for x in self.extra_boil] if self.extra_boil else None
+
         return {
             self.MALTS_KEY : malts_list,
             self.HOPS_KEY : hops_list,
             self.YEASTS_KEY : yeast_list,
+            self.EXTRA_MASH : extra_mash_list,
+            self.EXTRA_BOIL : extra_boil_list,
             self.DESCRIPTION_KEY : self.alternative_description
         }
 
@@ -148,6 +169,23 @@ class Ingredients(Jsonable) :
                 new_yeast = Yeast()
                 new_yeast.from_json(yeast)
                 self.yeasts.append(new_yeast)
+
+        # Parse extra mashing ingredient (most of the time absent)
+        if self.EXTRA_MASH in content and content[self.EXTRA_MASH] is not None :
+            self.extra_mash = []
+            for extra in content[self.EXTRA_MASH]:
+                new_extra = ExtraMash()
+                new_extra.from_json(extra)
+                self.extra_mash.append(new_extra)
+
+        # Parse extra boil ingredient (most of the time absent)
+        if self.EXTRA_BOIL in content and content[self.EXTRA_BOIL] is not None:
+            self.extra_boil = []
+            for extra in content[self.EXTRA_BOIL]:
+                new_extra = ExtraBoil()
+                new_extra.from_json(extra)
+                self.extra_boil.append(new_extra)
+
 
         if self.DESCRIPTION_KEY in content :
             self.alternative_description = content[self.DESCRIPTION_KEY]

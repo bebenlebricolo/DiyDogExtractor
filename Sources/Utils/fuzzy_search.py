@@ -14,16 +14,10 @@ class MostProbablePropertyHit(Generic[T]) :
     score : float = 0
     hit : Optional[T] = None
 
-def fuzzy_search_yeasts(ref_list: list[T], specimen_str : str) -> Optional[tuple[str, MostProbablePropertyHit[T]]]:
-    # Perform fuzzy search
-    if len(specimen_str) <= 10 :
-        return None
-
+def fuzzy_search_prop(ref_list: list[T], specimen_str : str) -> tuple[str, MostProbablePropertyHit[T]]:
     most_probable_hit = fuzzy_search_in_ref(specimen_str, ref_list)
     pair = (specimen_str, most_probable_hit)
-    if most_probable_hit.score >= (len(specimen_str) / 2) :
-        return pair
-    return None
+    return pair
 
 
 def compute_string_ratios(tag : str, token : str) -> int :

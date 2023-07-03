@@ -15,7 +15,7 @@ from .Models.jsonable import Jsonable, JsonOptionalProperty, JsonProperty
 from .style_finder import read_keywords_file, find_style_with_keywords, fuzzy_search_on_real_styles, read_styles_from_file, RefStyle
 from .dbanalyser import read_all_recipes
 from .Models.DBSanizer.known_good_props import *
-from .Utils.fuzzy_search import fuzzy_search_yeasts, fuzzy_search_in_ref
+from .Utils.fuzzy_search import fuzzy_search_prop, fuzzy_search_in_ref
 
 
 def infer_style_from_tags(recipes_list : list[rcp.Recipe], keywords_list : list[str], styles_reflist : list[RefStyle], logger : Logger) -> None :
@@ -38,10 +38,9 @@ def infer_style_from_tags(recipes_list : list[rcp.Recipe], keywords_list : list[
             logger.log(f"Extracted style \"{recipe.style.value}\" for recipe #{recipe.number.value} : {recipe.name.value}")
 
 def merge_yeasts(recipes_list : list[rcp.Recipe], yeasts_ref : list[YeastProp], logger : Logger) -> None :
-
     for recipe in recipes_list :
         for rcp_yeast in recipe.ingredients.value.yeasts :
-            returned_pair = fuzzy_search_yeasts(yeasts_ref, rcp_yeast.name)
+            returned_pair = fuzzy_search_prop(yeasts_ref, rcp_yeast.name)
             if not returned_pair :
                 continue
 
@@ -51,6 +50,25 @@ def merge_yeasts(recipes_list : list[rcp.Recipe], yeasts_ref : list[YeastProp], 
                 rcp_yeast.name = most_probable_hit.hit.name.value
                 logger.log(f"Yeast swap : recipe #{recipe.number.value} : {recipe.name.value}")
                 logger.log(f"   -> Swapping original yeast name {returned_pair[0]} for known good {rcp_yeast.name}")
+
+def merge_malts(recipes_list : list[rcp.Recipe], malts_ref : list[MaltProp], logger : Logger) -> None :
+    for recipe in recipes_list :
+        for malt in recipe.ingredients.value.malts :
+            returned_pair = fuzzy_search_prop(malts_ref, malt.name)
+            most_probable_hit = returned_pair[1]
+
+            # Swap malt name
+            if most_probable_hit  is not None and most_probable_hit.hit:
+                if most_probable_hit.score >= 23 :
+                    malt.name = most_probable_hit.hit.name.value
+                    logger.log(f"Malt swap : recipe #{recipe.number.value} : {recipe.name.value}")
+                    logger.log(f"   -> Swapping original malt name {returned_pair[0]} for known good {malt.name}")
+
+                # Probably an extra ingredient added during the mash (sometimes they are mixed up in DiyDog's recipes)
+                else :
+                    logger.log(f"Found probable \"Extra\" mash ingredient : {malt.name}")
+
+
 
 
 
@@ -138,6 +156,11 @@ def main(args : list[str]):
     merge_yeasts(recipes_list, yeasts_ref_list, logger)
     logger.log("Yeast merging OK!\n\n")
 
+    # Try to cleanup malts
+    logger.log("Merging malts to known good ones ...")
+    malts_ref_list = read_known_good_malts_from_file(malts_file)
+    merge_malts(recipes_list, malts_ref_list, logger)
+    logger.log("Yeast merging OK!\n\n")
 
 
 

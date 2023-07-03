@@ -27,7 +27,7 @@ class TestFuzzySearch(unittest.TestCase) :
 
         success = True
         for data in test_data :
-            result = fuzzy_search_yeasts([yeast_1056, yeast_1272], data[0])
+            result = fuzzy_search_prop([yeast_1056, yeast_1272], data[0])
             self.assertIsNotNone(result)
             if result[1].hit.name.value != data[1].name.value :
                 print(f"{result[1].hit.name.value} should be equal to {data[1].name.value } !")

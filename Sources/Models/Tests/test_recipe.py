@@ -63,6 +63,15 @@ class TestRecipeModels(unittest.TestCase) :
             Yeast("test yeast 1"),
             Yeast("test yeast 2")
         ]
+        ingredients.extra_mash = [
+            ExtraMash("Candy sugar", kgs=1.0, lbs=2.5),
+            ExtraMash("Syrup", kgs=0.50, lbs=1.25)
+        ]
+        ingredients.extra_boil = [
+            ExtraBoil("Coffee beans", 50, "End", "Flavour"),
+            ExtraBoil("Chilli pepper", 25, "End", "Flavour"),
+        ]
+
         # No description, this is voluntary
         ingredients.alternative_description = None
 
