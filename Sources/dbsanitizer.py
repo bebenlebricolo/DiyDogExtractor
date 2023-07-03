@@ -50,7 +50,7 @@ def merge_yeasts(recipes_list : list[rcp.Recipe], yeasts_ref : list[YeastProp], 
             if most_probable_hit  is not None and most_probable_hit.score >= 23 and most_probable_hit.hit:
                 rcp_yeast.name = most_probable_hit.hit.name.value
                 logger.log(f"Yeast swap : recipe #{recipe.number.value} : {recipe.name.value}")
-                logger.log(f"   -> Swapping original yeast name \"#{returned_pair[0]}\" for known good \"{rcp_yeast.name}\"")
+                logger.log(f"   -> Swapping original yeast name \"{returned_pair[0]}\" for known good \"{rcp_yeast.name}\"")
 
 def value_in_list_case_insensitive(value : str, input_list : list[str]) -> bool :
     for elem in input_list :
