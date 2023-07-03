@@ -27,7 +27,8 @@
             "name" : "CaraMalt",
             "manufacturer" : "Weyermann",
             "aliases":[
-                "Cara Malt"
+                "Cara Malt",
+                "Cara"
             ]
         },
         {
@@ -113,6 +114,10 @@
             "manufacturer" : "Any"
         },
         {
+            "name" : "Crystal 60",
+            "manufacturer" : "Any"
+        },
+        {
             "name" : "Crystal 120",
             "manufacturer" : "Any"
         },
@@ -194,6 +199,9 @@
         },
         {
             "name" : "Golden Naked Oats"
+        },
+        {
+            "name" : "Grano Dei Miracolo"
         },
         {
             "name" : "Lager Malt",
@@ -285,11 +293,9 @@
         {
             "name" : "Roasted Barley Malt",
             "manufacturer":"Crisp",
-            "url": "https://crispmalt.com/malts/roast-barley/"
-        },
-        {
-            "name" : "Roasted Barley Malt",
-            "manufacturer":"Crisp",
+            "aliases":[
+                "Roasted Malt"
+            ],
             "url": "https://crispmalt.com/malts/roast-barley/"
         },
         {
@@ -305,13 +311,35 @@
         {
             "name" : "Beech Smoked Malt",
             "manufacturer":"Weyermann",
+            "aliases":[
+                "Weyermann Smoked"
+            ],
             "url": "https://www.weyermann.de/en-gb/product/weyermann-beech-smoked-barley-malt/"
+        },
+        {
+            "name" : "Smoked Warminster",
+            "manufacturer" : "Warminster",
+            "url" : "https://www.warminster-malt.co.uk/our-malts/"
+        },
+        {
+            "name" : "Special W",
+            "manufacturer":"Weyermann",
+            "url":"https://www.weyermann.de/en-gb/product/weyermann-special-w-6/"
         },
         {
             "name" : "Torrefied Wheat"
         },
         {
+            "name" : "Trienzyme"
+        },
+        {
             "name" : "Wheat"
+        },
+        {
+            "name" : "Wheat Malt"
+        },
+        {
+            "name" : "Wheat Malt Uncrushed"
         },
         {
             "name" : "Torrefied Barley"

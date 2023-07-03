@@ -49,12 +49,26 @@ def merge_yeasts(recipes_list : list[rcp.Recipe], yeasts_ref : list[YeastProp], 
             if most_probable_hit  is not None and most_probable_hit.score >= 23 and most_probable_hit.hit:
                 rcp_yeast.name = most_probable_hit.hit.name.value
                 logger.log(f"Yeast swap : recipe #{recipe.number.value} : {recipe.name.value}")
-                logger.log(f"   -> Swapping original yeast name {returned_pair[0]} for known good {rcp_yeast.name}")
+                logger.log(f"   -> Swapping original yeast name \"#{returned_pair[0]}\" for known good \"{rcp_yeast.name}\"")
 
-def merge_malts(recipes_list : list[rcp.Recipe], malts_ref : list[MaltProp], logger : Logger) -> None :
+def value_in_list_case_insensitive(value : str, input_list : list[str]) -> bool :
+    for elem in input_list :
+        if elem.lower() == value.lower() :
+            return True
+    return False
+
+def merge_malts(recipes_list : list[rcp.Recipe], malts_ref : list[MaltProp], known_malt_extras : list[str], logger : Logger) -> None :
     for recipe in recipes_list :
+        malts_to_convert_in_extra : list[rcp.Malt] = []
         for malt in recipe.ingredients.value.malts :
-            returned_pair = fuzzy_search_prop(malts_ref, malt.name)
+
+            # Search for known in advance malt extras
+            if value_in_list_case_insensitive(malt.name, known_malt_extras) :
+                logger.log(f"Found probable \"Extra\" mash ingredient : {malt.name}")
+                malts_to_convert_in_extra.append(malt)
+                continue
+
+            returned_pair = fuzzy_search_prop(malts_ref, malt.name, order_sensitive=False)
             most_probable_hit = returned_pair[1]
 
             # Swap malt name
@@ -62,11 +76,22 @@ def merge_malts(recipes_list : list[rcp.Recipe], malts_ref : list[MaltProp], log
                 if most_probable_hit.score >= 23 :
                     malt.name = most_probable_hit.hit.name.value
                     logger.log(f"Malt swap : recipe #{recipe.number.value} : {recipe.name.value}")
-                    logger.log(f"   -> Swapping original malt name {returned_pair[0]} for known good {malt.name}")
+                    logger.log(f"   -> Swapping original malt name \"{returned_pair[0]}\" for known good \"{malt.name}\"")
 
                 # Probably an extra ingredient added during the mash (sometimes they are mixed up in DiyDog's recipes)
                 else :
                     logger.log(f"Found probable \"Extra\" mash ingredient : {malt.name}")
+                    malts_to_convert_in_extra.append(malt)
+
+        # Time to convert malts to extra mash ingredients
+        if len(malts_to_convert_in_extra) != 0 :
+            logger.log(f"Converting malts to extra mash ingredients for recipe #{recipe.number.value} : {recipe.name.value}")
+            for malt in malts_to_convert_in_extra :
+                logger.log(f"Converting {malt.name} into mash ingredient")
+                new_mash = rcp.ExtraMash()
+                new_mash.from_malt(malt)
+                recipe.ingredients.value.add_extra_mash(new_mash)
+                recipe.ingredients.value.remove_malt(malt)
 
 
 
@@ -110,6 +135,18 @@ def read_known_good_prop_from_file(filepath : Path, prop_kind : PropKind) -> lis
     return out_list
 
 
+def read_extras_from_file(filepath : Path) -> tuple[list[str], list[str]] :
+    """Extracts extra elements from json file. Returns a tuple (mash elements, boil elements)"""
+    mash_extras : list[str] = []
+    boil_extras : list[str] = []
+    with open(filepath, 'r') as file :
+        content = json.load(file)
+        for elem in content["mash"] :
+            mash_extras.append(elem)
+        for elem in content["boil"] :
+            boil_extras.append(elem)
+    return (mash_extras, boil_extras)
+
 def main(args : list[str]):
     parser = argparse.ArgumentParser("Database sanitizer script", description="Tries to match recipes properties against known-good datasets and tries to uniformize recipes")
     parser.add_argument("ref_dir", help="References directory, where known good dataset (known_good_<prop>.json) reside")
@@ -132,6 +169,7 @@ def main(args : list[str]):
     # So instead, rely on manually-prepared dataset that I know is part of DiyDog book (...)
     styles_file = ref_dir.joinpath("diydog_styles_keywords.json")
     styles_ref_file = ref_dir.joinpath("known_good_styles.json")
+    known_extras_file = ref_dir.joinpath("known_diydog_extras.json")
     hops_file = ref_dir.joinpath("known_good_hops.json")
     malts_file = ref_dir.joinpath("known_good_malts.json")
     yeasts_file = ref_dir.joinpath("known_good_yeasts.json")
@@ -145,21 +183,24 @@ def main(args : list[str]):
     keywords_list = read_keywords_file(styles_file)
 
     # Try to infer the right style for each beer
-    logger.log("Inferring styles for all recipes ...")
-    refstyle_list = read_styles_from_file(styles_ref_file)
-    infer_style_from_tags(recipes_list, keywords_list, refstyle_list, logger)
-    logger.log("Styles inferring OK!\n\n")
+    if False :
+        logger.log("Inferring styles for all recipes ...")
+        refstyle_list = read_styles_from_file(styles_ref_file)
+        infer_style_from_tags(recipes_list, keywords_list, refstyle_list, logger)
+        logger.log("Styles inferring OK!\n\n")
 
-    # Try to cleanup yeasts for each recipe
-    logger.log("Merging yeasts to known-good yeasts...")
-    yeasts_ref_list = read_known_good_yeasts_from_file(yeasts_file)
-    merge_yeasts(recipes_list, yeasts_ref_list, logger)
-    logger.log("Yeast merging OK!\n\n")
+        # Try to cleanup yeasts for each recipe
+        logger.log("Merging yeasts to known-good yeasts...")
+        yeasts_ref_list = read_known_good_yeasts_from_file(yeasts_file)
+        merge_yeasts(recipes_list, yeasts_ref_list, logger)
+        logger.log("Yeast merging OK!\n\n")
+
+    (mash_extras, boil_extras) = read_extras_from_file(known_extras_file)
 
     # Try to cleanup malts
     logger.log("Merging malts to known good ones ...")
     malts_ref_list = read_known_good_malts_from_file(malts_file)
-    merge_malts(recipes_list, malts_ref_list, logger)
+    merge_malts(recipes_list, malts_ref_list, mash_extras, logger)
     logger.log("Yeast merging OK!\n\n")
 
 

@@ -75,7 +75,10 @@ class Malt(Jsonable) :
 # Sometimes extra ingredients are added in the "malt" section to depict ingredients that
 # are added during the mash process
 class ExtraMash(Malt):
-    pass
+    def from_malt(self, malt : Malt) :
+        self.kgs = malt.kgs
+        self.lbs = malt.lbs
+        self.name = malt.name
 
 @dataclass
 class Hop(Jsonable) :
@@ -101,7 +104,12 @@ class Hop(Jsonable) :
 # Sometimes extra ingredients are added in the "malt" section to depict ingredients that
 # are added during the mash process
 class ExtraBoil(Hop):
-    pass
+    def from_hop(self, hop : Hop) :
+        self.amount = hop.amount
+        self.attribute = hop.attribute
+        self.name = hop.name
+        self.when = hop.when
+
 
 @dataclass
 class Yeast(Jsonable) :
@@ -190,6 +198,13 @@ class Ingredients(Jsonable) :
         if self.DESCRIPTION_KEY in content :
             self.alternative_description = content[self.DESCRIPTION_KEY]
 
+    def add_extra_mash(self, extra_mash : ExtraMash) :
+        if self.extra_mash is None :
+            self.extra_mash = []
+        self.extra_mash.append(extra_mash)
+
+    def remove_malt(self, malt : Malt) :
+        self.malts.remove(malt)
 
 @dataclass
 class Temperature(Jsonable) :
