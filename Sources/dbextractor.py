@@ -24,6 +24,7 @@ from fitz.utils import get_page_pixmap
 from .Utils.parsing import parse_line
 from .Utils.logger import Logger
 from .Utils.downloader import download_pdf
+from .Utils.recipe_service import dump_all_recipes_to_disk
 from .Models.blocks import PageBlocks, Coordinates, TextBlock, TextElement
 from .Models import recipe as rcp
 from .Models import record as rec
@@ -1436,13 +1437,8 @@ def main(args) :
 
     if aggregate_results :
         logger.log("Dumping aggregated recipe json book as 'all_recipes.json'.")
-        json_data = []
-        for recipe in recipes_list :
-            json_data.append(recipe.to_json())
         filepath = cached_recipes_dir.joinpath("all_recipes.json")
-        with open(filepath, "w") as file :
-            json.dump({"recipes" : json_data}, file, indent=4)
-
+        dump_all_recipes_to_disk(filepath, recipes_list)
 
     # Configuring deployment directory
     deploy_dir = CACHE_DIRECTORY.joinpath("deployed")

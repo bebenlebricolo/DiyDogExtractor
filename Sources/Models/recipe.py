@@ -203,8 +203,16 @@ class Ingredients(Jsonable) :
             self.extra_mash = []
         self.extra_mash.append(extra_mash)
 
+    def add_extra_boil(self, extra_boil : ExtraBoil) :
+        if self.extra_boil is None :
+            self.extra_boil = []
+        self.extra_boil.append(extra_boil)
+
     def remove_malt(self, malt : Malt) :
         self.malts.remove(malt)
+
+    def remove_hop(self, hop : Hop) :
+        self.hops.remove(hop)
 
 @dataclass
 class Temperature(Jsonable) :
@@ -527,3 +535,6 @@ class Recipe(Jsonable) :
         identical &= self.parsing_errors == other.parsing_errors        #type: ignore
         identical &= self.food_pairing == other.food_pairing            #type: ignore
         return identical
+
+
+

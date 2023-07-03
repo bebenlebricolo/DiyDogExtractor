@@ -10,6 +10,7 @@ from thefuzz import fuzz
 
 from .Utils.logger import Logger
 from .Utils import filesystem as fs
+from .Utils.recipe_service import dump_all_recipes_to_disk
 from .Models import recipe as rcp
 from .Models.jsonable import Jsonable, JsonOptionalProperty, JsonProperty
 from .style_finder import read_keywords_file, find_style_with_keywords, fuzzy_search_on_real_styles, read_styles_from_file, RefStyle
@@ -93,6 +94,43 @@ def merge_malts(recipes_list : list[rcp.Recipe], malts_ref : list[MaltProp], kno
                 recipe.ingredients.value.add_extra_mash(new_mash)
                 recipe.ingredients.value.remove_malt(malt)
 
+def merge_hops(recipes_list : list[rcp.Recipe], hops_ref : list[HopProp], known_hop_extras : list[str], logger : Logger) -> None :
+    for recipe in recipes_list :
+        hops_to_convert_in_extra : list[rcp.Hop] = []
+        for hop in recipe.ingredients.value.hops :
+
+            # Search for known in advance malt extras
+            if value_in_list_case_insensitive(hop.name, known_hop_extras) :
+                logger.log(f"Found probable \"Extra\" boil ingredient : {hop.name}")
+                hops_to_convert_in_extra.append(hop)
+                continue
+
+            returned_pair = fuzzy_search_prop(hops_ref, hop.name, order_sensitive=False)
+            most_probable_hit = returned_pair[1]
+
+            # Swap hop name
+            if most_probable_hit  is not None and most_probable_hit.hit:
+                if most_probable_hit.score >= 23 :
+                    hop.name = most_probable_hit.hit.name.value
+                    logger.log(f"Hop swap : recipe #{recipe.number.value} : {recipe.name.value}")
+                    logger.log(f"   -> Swapping original hop name \"{returned_pair[0]}\" for known good \"{hop.name}\"")
+
+                # Probably an extra ingredient added during the boil (sometimes they are mixed up in DiyDog's recipes)
+                else :
+                    logger.log(f"Found probable \"Extra\" boil ingredient : {hop.name}")
+                    hops_to_convert_in_extra.append(hop)
+
+        # Time to convert malts to extra mash ingredients
+        if len(hops_to_convert_in_extra) != 0 :
+            logger.log(f"Converting hops to extra boil ingredients for recipe #{recipe.number.value} : {recipe.name.value}")
+            for hop in hops_to_convert_in_extra :
+                logger.log(f"Converting {hop.name} into boil ingredient")
+                new_boil = rcp.ExtraBoil()
+                new_boil.from_hop(hop)
+                recipe.ingredients.value.add_extra_boil(new_boil)
+                recipe.ingredients.value.remove_hop(hop)
+
+
 
 
 
@@ -115,6 +153,12 @@ def read_known_good_yeasts_from_file(yeast_filepath : Path) -> list[YeastProp]:
 def read_known_good_malts_from_file(malts_filepath : Path) -> list[MaltProp]:
     built_list = read_known_good_prop_from_file(malts_filepath, PropKind.Malt)
     cast(list[MaltProp] , built_list)
+    return built_list
+
+
+def read_known_good_hops_from_file(hops_filepath : Path) -> list[HopProp]:
+    built_list = read_known_good_prop_from_file(hops_filepath, PropKind.Hop)
+    cast(list[HopProp] , built_list)
     return built_list
 
 def read_known_good_styles_from_file(styles_filepath : Path) -> list[StylesProp]:
@@ -181,28 +225,37 @@ def main(args : list[str]):
     recipes_list = read_all_recipes(all_recipes_file)
 
     keywords_list = read_keywords_file(styles_file)
+    (mash_extras, boil_extras) = read_extras_from_file(known_extras_file)
 
     # Try to infer the right style for each beer
-    if False :
-        logger.log("Inferring styles for all recipes ...")
-        refstyle_list = read_styles_from_file(styles_ref_file)
-        infer_style_from_tags(recipes_list, keywords_list, refstyle_list, logger)
-        logger.log("Styles inferring OK!\n\n")
+    logger.log("Inferring styles for all recipes ...")
+    refstyle_list = read_styles_from_file(styles_ref_file)
+    infer_style_from_tags(recipes_list, keywords_list, refstyle_list, logger)
+    logger.log("Styles inferring OK!\n\n")
 
-        # Try to cleanup yeasts for each recipe
-        logger.log("Merging yeasts to known-good yeasts...")
-        yeasts_ref_list = read_known_good_yeasts_from_file(yeasts_file)
-        merge_yeasts(recipes_list, yeasts_ref_list, logger)
-        logger.log("Yeast merging OK!\n\n")
+    # Try to cleanup yeasts for each recipe
+    logger.log("Merging yeasts to known-good yeasts...")
+    yeasts_ref_list = read_known_good_yeasts_from_file(yeasts_file)
+    merge_yeasts(recipes_list, yeasts_ref_list, logger)
+    logger.log("Yeast merging OK!\n\n")
 
-    (mash_extras, boil_extras) = read_extras_from_file(known_extras_file)
 
     # Try to cleanup malts
     logger.log("Merging malts to known good ones ...")
     malts_ref_list = read_known_good_malts_from_file(malts_file)
     merge_malts(recipes_list, malts_ref_list, mash_extras, logger)
-    logger.log("Yeast merging OK!\n\n")
+    logger.log("Malt merging OK!\n\n")
 
+    # Try to cleanup hops
+    logger.log("Merging hops to known good ones ...")
+    hops_ref_list = read_known_good_hops_from_file(hops_file)
+    merge_hops(recipes_list, hops_ref_list, boil_extras, logger)
+    logger.log("Hops merging OK!\n\n")
+
+    logger.log("Dumping cleaned up all_recipes.json to disk !")
+    all_recipes_filepath = output_directory.joinpath("all_recipes.json")
+    dump_all_recipes_to_disk(all_recipes_filepath, recipes_list)
+    logger.log("Done !")
 
 
     # Cleaning up yeasts (merging all yeast entries with known good yeasts)
