@@ -80,30 +80,25 @@ def read_styles_from_file(styles_ref_file : Path) -> list[RefStyle]:
     return ref_styles
 
 
-def fuzzy_search_on_real_styles(styles_ref_file : Path, tags_list_file : Path, output_directory : Path, logger: Logger):
-    logger.log("Reading styles from reference file")
-    ref_styles = read_styles_from_file(styles_ref_file)
-
-    logger.log("Reading tags from file")
+def read_tags_from_file(tags_file_path : Path) -> list[str] :
     tags_list : list[str] = []
-    with open(tags_list_file, 'r') as file :
+    with open(tags_file_path, 'r') as file :
         content = json.load(file)
         for elem in content["tags"] :
             tags_list.append(elem)
 
+    return tags_list
+
+def fuzzy_search_on_real_styles(styles_ref: list[RefStyle], specimen_str : str) -> Optional[tuple[str, MostProbableHit]]:
     # Perform fuzzy search
-    tags_inferred_style_map : list[tuple[str, MostProbableHit]] = []
-    rejected_tags : list[tuple[str, MostProbableHit]] = []
-    for tag in tags_list :
-        if len(tag) <= 10 :
-            # Skip small tags and numbers-only
-            continue
-        most_probable_hit = fuzzy_search_in_ref(tag, ref_styles)
-        pair = (tag, most_probable_hit)
-        if most_probable_hit.distance >= (len(tag) / 2) :
-            tags_inferred_style_map.append(pair)
-        else :
-            rejected_tags.append(pair)
+    if len(specimen_str) <= 10 :
+        return None
+
+    most_probable_hit = fuzzy_search_in_ref(specimen_str, styles_ref)
+    pair = (specimen_str, most_probable_hit)
+    if most_probable_hit.distance >= (len(specimen_str) / 2) :
+        return pair
+    return None
 
 def read_keywords_file(keywords_file : Path) -> list[str] :
     # Lowercasing all elements from keywords

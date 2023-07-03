@@ -5,12 +5,19 @@ import json
 from dataclasses import dataclass, field
 
 from typing import cast
+from enum import Enum
 
 from .Utils.logger import Logger
 from .Utils import filesystem as fs
 from .Models import recipe as rcp
 from .Models.jsonable import Jsonable
 
+class PropKind(Enum):
+    Yeast = "yeasts"
+    Hop = "hops"
+    FoodPairing = "foodPairings"
+    Malt = "malts"
+    Tag = "tags"
 
 @dataclass
 class BaseMapping(Jsonable):
@@ -28,6 +35,22 @@ class BaseMapping(Jsonable):
         self.found_in_beers = []
         for elem in content["foundInBeers"] :
             self.found_in_beers.append(elem)
+
+    @staticmethod
+    def build_derived(kind : PropKind) :
+        match kind :
+            case PropKind.Yeast :
+                return YeastMapping()
+            case PropKind.Hop :
+                return HopMapping()
+            case PropKind.Malt :
+                return MaltMapping()
+            case PropKind.FoodPairing :
+                return FoodPairingMapping()
+            case PropKind.Tag :
+                return TagMapping()
+            case _:
+                raise Exception("Whoops ! Wrong type !")
 
 @dataclass
 class HopMapping(BaseMapping) :

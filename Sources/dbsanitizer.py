@@ -3,75 +3,93 @@ from pathlib import Path
 import argparse
 import json
 from dataclasses import dataclass, field
+from enum import Enum
 
-from typing import cast, Optional
+from typing import cast, Optional, Generic, TypeVar
 from thefuzz import fuzz
 
 from .Utils.logger import Logger
 from .Utils import filesystem as fs
 from .Models import recipe as rcp
-from .Models.jsonable import Jsonable
-from .style_finder import read_keywords_file, find_style_with_keywords
+from .Models.jsonable import Jsonable, JsonOptionalProperty, JsonProperty
+from .style_finder import read_keywords_file, find_style_with_keywords, fuzzy_search_on_real_styles, read_styles_from_file, RefStyle
 from .dbanalyser import read_all_recipes
-
-@dataclass
-class RefStyle(Jsonable):
-    name : str = ""
-    category : str = ""
-    aliases : Optional[list[str]] = None
-    url : str = ""
-
-    def from_json(self, content: dict) -> None:
-        self.name = content["name"]
-        self.category = content["category"]
-        self.url = content["url"]
-        if "aliases" in content and content["aliases"] is not None :
-            self.aliases = []
-            for elem in content["aliases"] :
-                self.aliases.append(elem)
-
-    def to_json(self) -> dict:
-        out_dict = {
-            "name" : self.name,
-            "category" : self.category,
-            "url" : self.url,
-            "aliases" : self.aliases
-        }
-        return out_dict
-
-@dataclass
-class MostProbableHit:
-    distance : float = 0.0
-    style : Optional[RefStyle] = None
+from .Models.DBSanizer.known_good_props import *
+from .Utils.fuzzy_search import fuzzy_search_yeasts, fuzzy_search_in_ref
 
 
-def compute_string_ratios(tag : str, token : str) -> int :
-    distance = fuzz.token_set_ratio(tag, token)
-    return distance
+def infer_style_from_tags(recipes_list : list[rcp.Recipe], keywords_list : list[str], styles_reflist : list[RefStyle], logger : Logger) -> None :
+    for recipe in recipes_list :
+        # Handling styles inferring from tags
+        if recipe.tags.value is not None :
+            # Adding beer's name and its subtitle, sometimes names carry more data than tags themselves, regarding beer style (...)
+            styles = find_style_with_keywords(keywords_list, recipe.tags.value)
+            if len(styles) == 0 :
+                logger.log("   /!\\ Could not retrieve style from tags only : Fuzzy searching style with recipe's name ...")
+                most_probable_hit = fuzzy_search_on_real_styles(styles_reflist, recipe.name.value)
+                if most_probable_hit and most_probable_hit[1].style:
+                    recipe.style.value = most_probable_hit[1].style.name
+                else :
+                    logger.log(f"   /!\\ Could not retrieve style for recipe #{recipe.number.value} : {recipe.name.value}")
+                    recipe.style.value = "Unknown"
+            else :
+                recipe.style.value = styles[0]
 
-def fuzzy_search_in_ref(tag : str, styles_ref_list : list[RefStyle]) -> MostProbableHit :
-    # Trying to minimize the hamming distance
-    max_ratio = 0
-    most_probable_style = styles_ref_list[0]
+            logger.log(f"Extracted style \"{recipe.style.value}\" for recipe #{recipe.number.value} : {recipe.name.value}")
 
-    for style in styles_ref_list :
-        local_ratio = compute_string_ratios(tag, style.name)
-        if style.aliases is not None :
-            for alias in style.aliases :
-                alias_distance = compute_string_ratios(tag, alias)
-                if alias_distance > local_ratio :
-                    local_ratio = alias_distance
+def merge_yeasts(recipes_list : list[rcp.Recipe], yeasts_ref : list[YeastProp], logger : Logger) -> None :
 
-        if local_ratio > max_ratio :
-            max_ratio = local_ratio
-            most_probable_style = style
+    for recipe in recipes_list :
+        for rcp_yeast in recipe.ingredients.value.yeasts :
+            returned_pair = fuzzy_search_yeasts(yeasts_ref, rcp_yeast.name)
+            if not returned_pair :
+                continue
+
+            most_probable_hit = returned_pair[1]
+            # Swap yeast name by the one we've found
+            if most_probable_hit  is not None and most_probable_hit.score >= 23 and most_probable_hit.hit:
+                rcp_yeast.name = most_probable_hit.hit.name.value
+                logger.log(f"Yeast swap : recipe #{recipe.number.value} : {recipe.name.value}")
+                logger.log(f"   -> Swapping original yeast name {returned_pair[0]} for known good {rcp_yeast.name}")
 
 
-    return MostProbableHit(style=most_probable_style, distance=max_ratio)
 
-def infer_style_from_tags(recipe : rcp.Recipe, keywords_list : list[str]):
-    pass
+# def read_known_good_yeasts_from_file(yeast_filepath : Path) -> list[YeastProp]:
+#     out_list : list[YeastProp] = []
+#     with open(yeast_filepath, 'r') as file :
+#         content = json.load(file)
+#         for yeast in content["yeasts"] :
+#             new_yeast = YeastProp()
+#             new_yeast.from_json(yeast)
+#             out_list.append(new_yeast)
+#     return out_list
 
+def read_known_good_yeasts_from_file(yeast_filepath : Path) -> list[YeastProp]:
+    built_list = read_known_good_prop_from_file(yeast_filepath, PropKind.Yeast)
+    cast(list[YeastProp] , built_list)
+    return built_list
+
+def read_known_good_malts_from_file(malts_filepath : Path) -> list[MaltProp]:
+    built_list = read_known_good_prop_from_file(malts_filepath, PropKind.Malt)
+    cast(list[MaltProp] , built_list)
+    return built_list
+
+def read_known_good_styles_from_file(styles_filepath : Path) -> list[StylesProp]:
+    built_list = read_known_good_prop_from_file(styles_filepath, PropKind.Styles)
+    cast(list[StylesProp] , built_list)
+    return built_list
+
+
+T = TypeVar("T", YeastProp, HopProp, MaltProp, StylesProp)
+def read_known_good_prop_from_file(filepath : Path, prop_kind : PropKind) -> list[T]:
+    out_list : list[T] = []
+    with open(filepath, 'r') as file :
+        content = json.load(file)
+        for prop in content[prop_kind.value] :
+            new_prop = BaseProperty.build_derived(prop_kind)
+            new_prop.from_json(prop)
+            out_list.append(new_prop) #type:ignore
+    return out_list
 
 
 def main(args : list[str]):
@@ -95,6 +113,7 @@ def main(args : list[str]):
     # and even fuzzy search has a hard time finding actual "regular" styles to stick to.
     # So instead, rely on manually-prepared dataset that I know is part of DiyDog book (...)
     styles_file = ref_dir.joinpath("diydog_styles_keywords.json")
+    styles_ref_file = ref_dir.joinpath("known_good_styles.json")
     hops_file = ref_dir.joinpath("known_good_hops.json")
     malts_file = ref_dir.joinpath("known_good_malts.json")
     yeasts_file = ref_dir.joinpath("known_good_yeasts.json")
@@ -107,14 +126,22 @@ def main(args : list[str]):
 
     keywords_list = read_keywords_file(styles_file)
 
-    # Process each recipe
-    for recipe in recipes_list :
-        # Handling styles inferring from tags
-        if recipe.tags.value is not None :
-            styles = find_style_with_keywords(keywords_list, recipe.tags.value)
-            recipe.style.value = styles[0] if len(styles) > 0 else "Unknown"
-            logger.log(f"Extracted style \"{recipe.style.value}\" for recipe #{recipe.number.value}")
+    # Try to infer the right style for each beer
+    logger.log("Inferring styles for all recipes ...")
+    refstyle_list = read_styles_from_file(styles_ref_file)
+    infer_style_from_tags(recipes_list, keywords_list, refstyle_list, logger)
+    logger.log("Styles inferring OK!\n\n")
 
+    # Try to cleanup yeasts for each recipe
+    logger.log("Merging yeasts to known-good yeasts...")
+    yeasts_ref_list = read_known_good_yeasts_from_file(yeasts_file)
+    merge_yeasts(recipes_list, yeasts_ref_list, logger)
+    logger.log("Yeast merging OK!\n\n")
+
+
+
+
+    # Cleaning up yeasts (merging all yeast entries with known good yeasts)
 
     return 0
 
