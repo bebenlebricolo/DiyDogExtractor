@@ -1,0 +1,244 @@
+{
+    "yeasts": [
+        {
+            "name" : "Safale - BE-134",
+            "manufacturer" : "Fermentis",
+            "aliases" : [
+                "BE-134"
+            ],
+            "url" : "https://beermaverick.com/yeast/be-134-safale-be-134-fermentis/"
+        },
+        {
+            "name" : "Lalvin - ec-1118",
+            "manufacturer" : "Lallemand",
+            "aliases" : [
+                "Champagne",
+                "ec-1118"
+            ],
+            "url" : "https://www.lallemandbrewing.com/en/continental-europe/product-details/lalvin-ec-1118/"
+        },
+        {
+            "name" : "Saflager S-189",
+            "manufacturer" : "Fermentis",
+            "aliases":[
+                "S189"
+            ],
+            "url" : "https://beermaverick.com/yeast/s-189-saflager-s-189-fermentis/"
+        },
+        {
+            "name" : "Saflager W-34/70",
+            "manufacturer" : "Fermentis",
+            "aliases":[
+                "W-34/70"
+            ],
+            "url" : "https://beermaverick.com/yeast/w-34-70-saflager-w-34-70-fermentis/"
+        },
+        {
+            "name" : "Safale US-05",
+            "manufacturer" : "Fermentis",
+            "aliases":[
+                "US-05"
+            ],
+            "url" : "https://beermaverick.com/yeast/us-05-safale-us-05-fermentis/"
+        },
+        {
+            "name" : "White Labs WLP4000",
+            "manufacturer" : "White Labs",
+            "aliases" :[
+                "WLP4000",
+                "Vermont Ale"
+            ],
+            "url" : "https://beermaverick.com/yeast/wlp4000-vermont-ale-the-yeast-bay/"
+        },
+        {
+            "name" : "SafAle WB-06",
+            "manufacturer" : "Fermentis",
+            "aliases" :[
+                "WB-06"
+            ],
+            "url" : "https://beermaverick.com/yeast/wb-06-safbrew-wb-06-fermentis/"
+        },
+        {
+            "name" : "WLP 351 Bavarian Weizen",
+            "manufacturer" : "White Labs",
+            "aliases" :[
+                "WLP 351",
+                "Bavarian Weizen"
+            ],
+            "url" : "https://beermaverick.com/yeast/wlp351-bavarian-weizen-ale-yeast-white-labs/"
+        },
+        {
+            "name" : "WLP013 London Ale",
+            "manufacturer" : "White Labs",
+            "aliases" :[
+                "WLP 013",
+                "London Ale"
+            ],
+            "url" : "https://beermaverick.com/yeast/wlp013-london-ale-yeast-white-labs/"
+        },
+        {
+            "name" : "WLP099 Super High Gravity Ale",
+            "manufacturer" : "White Labs",
+            "aliases" :[
+                "WLP 099",
+                "Super High Gravity Ale"
+            ],
+            "url" : "https://beermaverick.com/yeast/wlp099-super-high-gravity-ale-yeast-white-labs/"
+        },
+        {
+            "name" : "WLP500 Monastery Ale",
+            "manufacturer" : "White Labs",
+            "aliases" :[
+                "WLP 500",
+                "Monastery Ale"
+            ],
+            "url" : "https://beermaverick.com/yeast/wlp500-monastery-ale-yeast-white-labs/"
+        },
+        {
+            "name" : "WLP500 Monastery Ale",
+            "manufacturer" : "White Labs",
+            "aliases" :[
+                "WLP 500",
+                "Monastery Ale"
+            ],
+            "url" : "https://beermaverick.com/yeast/wlp500-monastery-ale-yeast-white-labs/"
+        },
+        {
+            "name" : "Wyeast 1010 - American Wheat\u0099",
+            "manufacturer" : "WYeast",
+            "aliases" :[
+                "1010",
+                "American Wheat"
+            ],
+            "url" : "https://beermaverick.com/yeast/wy1010-american-wheat-wyeast/"
+        },
+        {
+            "name" : "Wyeast 1056 - American Ale\u0099",
+            "manufacturer" : "WYeast",
+            "aliases" :[
+                "1056",
+                "American Ale"
+            ],
+            "url" : "https://beermaverick.com/yeast/wy1056-american-ale-wyeast"
+        },
+        {
+            "name" : "Wyeast 1272 - American Ale II\u0099",
+            "manufacturer" : "WYeast",
+            "aliases" :[
+                "1272",
+                "American Ale II"
+            ],
+            "url" : "https://beermaverick.com/yeast/wy1272-american-ale-ii-wyeast/"
+        },
+        {
+            "name" : "Wyeast 1388 - Belgian Strong Ale \u0099",
+            "manufacturer" : "WYeast",
+            "aliases" :[
+                "1388",
+                "Belgian Strong Ale"
+            ],
+            "url" : "https://beermaverick.com/yeast/wy1388-belgian-strong-ale-wyeast"
+        },
+        {
+            "name" : "Wyeast 2007 - Pilsen Lager\u0099",
+            "manufacturer" : "WYeast",
+            "aliases" :[
+                "2007",
+                "Pilsen Lager"
+            ],
+            "url" : "https://beermaverick.com/yeast/wy2007-pilsen-lager-wyeast"
+        },
+        {
+            "name" : "Wyeast 2124 - Bohemian Lager\u0099",
+            "manufacturer" : "WYeast",
+            "aliases" :[
+                "2124",
+                "Bohemian Lager"
+            ],
+            "url" : "https://beermaverick.com/yeast/wy2124-bohemian-lager-wyeast"
+        },
+        {
+            "name" : "Wyeast 3333 - German Wheat\u0099",
+            "manufacturer" : "WYeast",
+            "aliases" :[
+                "3333",
+                "German Wheat"
+            ],
+            "url" : "https://beermaverick.com/yeast/wy3333-german-wheat-wyeast"
+        },
+        {
+            "name" : "Wyeast 3522 - Belgian Ardennes\u0099",
+            "manufacturer" : "WYeast",
+            "aliases" :[
+                "3522",
+                "Belgian Ardennes"
+            ],
+            "url" : "https://beermaverick.com/yeast/wy3522-belgian-ardennes-wyeast"
+        },
+        {
+            "name" : "Wyeast 3638 - Bavarian Wheat\u0099",
+            "manufacturer" : "WYeast",
+            "aliases" :[
+                "3638",
+                "Bavarian Wheat"
+            ],
+            "url" : "https://beermaverick.com/yeast/wy3638-bavarian-wheat-wyeast"
+        },
+        {
+            "name" : "Wyeast 3711 - French Saison\u0099",
+            "manufacturer" : "WYeast",
+            "aliases" :[
+                "3711",
+                "French Saison"
+            ],
+            "url" : "https://beermaverick.com/yeast/wy3711-french-saison-wyeast"
+        },
+        {
+            "name" : "Wyeast 3724 - Belgian Saison\u0099",
+            "manufacturer" : "WYeast",
+            "aliases" :[
+                "3724",
+                "Belgian Saison"
+            ],
+            "url" : "https://beermaverick.com/yeast/wy3724-belgian-saison-wyeast"
+        },
+        {
+            "name" : "Wyeast 3787 - Trappist High\u0099",
+            "manufacturer" : "WYeast",
+            "aliases" :[
+                "3787",
+                "Trappist High"
+            ],
+            "url" : "https://wyeastlab.com/product/belgian-high-gravity/"
+        },
+        {
+            "name" : "Wyeast 3787 - Belgian High Gravity\u0099",
+            "manufacturer" : "WYeast",
+            "aliases" :[
+                "3787",
+                "Trappist High",
+                "Belgian High Gravity"
+            ],
+            "url" : "https://beermaverick.com/yeast/wy3787-belgian-high-gravity-wyeast"
+        },
+        {
+            "name" : "Wyeast 3944 - Belgian Witbier\u0099",
+            "manufacturer" : "WYeast",
+            "aliases" :[
+                "3944",
+                "Belgian Witbier"
+            ],
+            "url" : "https://beermaverick.com/yeast/wy3944-belgian-witbier-wyeast"
+        },
+        {
+            "name" : "Wyeast 3031-PC - Saison-Brett Blend",
+            "manufacturer" : "WYeast",
+            "aliases":[
+                "House Brett Blend",
+                "3031-PC",
+                "Saison Brett Blend"
+            ],
+            "url" : "https://wyeastlab.com/product/saison-brett-blend/"
+        }
+    ]
+}

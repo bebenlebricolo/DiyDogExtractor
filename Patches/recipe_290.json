@@ -4,8 +4,9 @@
     "number": 290,
     "pageNumber": 290,
     "tags": [
-        "ELDERFLOWER INFUSED DOUBLE IPA"
+        "Elderflower Infused Double Ipa"
     ],
+    "style": null,
     "firstBrewed": "2017",
     "image": {
         "kind": "FileSource",
@@ -13,7 +14,7 @@
     },
     "pdfPage": {
         "kind": "FileSource",
-        "path": "../pdf_pages/beer_290.pdf"
+        "path": "../pdf_pages/page_290.pdf"
     },
     "description": "Brewed exclusively for the Irish market, this Hello My Name brew features a twist of flavour inspired by Ireland.",
     "brewersTip": "Save yourself a lot of hassle and buy the Elderflower as a concentrate or cordial. Collecting elderberries ranks low on the FPES (fruit picking enjoyment scale), can't imagine the flower picking is much better.",

@@ -1,0 +1,196 @@
+{
+    "name": "B-SIDES \u0096 SORACHI BITTER",
+    "subtitle": "",
+    "number": 185,
+    "tags": [
+        "Sorachi Ace Bitter"
+    ],
+    "style": null,
+    "firstBrewed": "MARCH 2015",
+    "image": {
+        "kind": "FileSource",
+        "path": "../images/beer_185.png"
+    },
+    "pdfPage": {
+        "kind": "FileSource",
+        "path": "../pdf_pages/page_185.pdf"
+    },
+    "description": "Pilot Brew: A twist on an English Bitter style beer, using Sorachi Ace hops throughout making a showcase of the off the dill and lemon character.",
+    "brewersTip": "The touch of rye adds a great touch of spice that plays off the hops really well.",
+    "basics": {
+        "volume": {
+            "litres": 20.0,
+            "galons": 5.0
+        },
+        "boilVolume": {
+            "litres": 25.0,
+            "galons": 6.6
+        },
+        "abv": 6.3,
+        "targetOg": 1060.0,
+        "targetFg": 1010.0,
+        "ebc": 14.0,
+        "ibu": 130.0,
+        "srm": 7.0,
+        "ph": 5.2,
+        "attenuationLevel": 83.0
+    },
+    "foodPairings": [
+        "Greek piroshki pies",
+        "Poached salmon with salsa verde",
+        "Strawberry filo tarts"
+    ],
+    "ingredients": {
+        "malts": [
+            {
+                "name": "Extra Pale",
+                "kgs": 4.38,
+                "lbs": 9.64
+            },
+            {
+                "name": "Crystal 150",
+                "kgs": 0.16,
+                "lbs": 0.34
+            },
+            {
+                "name": "Dark Crystal",
+                "kgs": 0.16,
+                "lbs": 0.34
+            },
+            {
+                "name": "Munich",
+                "kgs": 1.25,
+                "lbs": 2.75
+            },
+            {
+                "name": "Rye",
+                "kgs": 0.63,
+                "lbs": 1.38
+            }
+        ],
+        "hops": [
+            {
+                "name": "Galena",
+                "amount": 17.5,
+                "when": "Start",
+                "attribute": "Bitter"
+            },
+            {
+                "name": "Sorachi Ace",
+                "amount": 17.5,
+                "when": "Start",
+                "attribute": "Bitter"
+            },
+            {
+                "name": "Ella",
+                "amount": 17.5,
+                "when": "Start",
+                "attribute": "Bitter"
+            },
+            {
+                "name": "Galena",
+                "amount": 17.5,
+                "when": "Middle",
+                "attribute": "Flavour"
+            },
+            {
+                "name": "Sorachi Ace",
+                "amount": 17.5,
+                "when": "Middle",
+                "attribute": "Flavour"
+            },
+            {
+                "name": "Ella",
+                "amount": 17.5,
+                "when": "Middle",
+                "attribute": "Flavour"
+            },
+            {
+                "name": "Galena",
+                "amount": 17.5,
+                "when": "End",
+                "attribute": "Flavour"
+            },
+            {
+                "name": "Sorachi Ace",
+                "amount": 17.5,
+                "when": "End",
+                "attribute": "Flavour"
+            },
+            {
+                "name": "Ella",
+                "amount": 17.5,
+                "when": "End",
+                "attribute": "Flavour"
+            },
+            {
+                "name": "Galena",
+                "amount": 10.0,
+                "when": "Dry Hop",
+                "attribute": "Aroma"
+            },
+            {
+                "name": "Sorachi Ace",
+                "amount": 10.0,
+                "when": "Dry Hop",
+                "attribute": "Aroma"
+            },
+            {
+                "name": "Ella",
+                "amount": 10.0,
+                "when": "Dry Hop",
+                "attribute": "Aroma"
+            }
+        ],
+        "yeasts": [
+            {
+                "name": "Wyeast 1056 - American Ale\u0099"
+            }
+        ],
+        "alternativeDescription": null
+    },
+    "methodTimings": {
+        "mashTemps": [
+            {
+                "celsius": 60.0,
+                "fahrenheit": 140.0,
+                "time": 10.0
+            },
+            {
+                "celsius": 65.0,
+                "fahrenheit": 149.0,
+                "time": 30.0
+            },
+            {
+                "celsius": 72.0,
+                "fahrenheit": 162.0,
+                "time": 10.0
+            },
+            {
+                "celsius": 78.0,
+                "fahrenheit": 172.0,
+                "time": 5.0
+            }
+        ],
+        "mashTips": [],
+        "fermentation": {
+            "celsius": 20.0,
+            "fahrenheit": 20.0,
+            "tips": []
+        },
+        "twists": [
+            {
+                "name": "This beer was unfiltered to give it a traditional ale appearance",
+                "amount": null,
+                "when": null
+            },
+            {
+                "name": "Indian Coriander",
+                "amount": 2.5,
+                "when": null
+            }
+        ]
+    },
+    "packaging": "Keg",
+    "parsingErrors": null
+}

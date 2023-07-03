@@ -1,0 +1,118 @@
+{
+    "name": "NO LABEL",
+    "subtitle": "",
+    "number": 204,
+    "tags": [
+        "Dry Hopped K\u00d6lsch"
+    ],
+    "style": null,
+    "firstBrewed": "OCTOBER 2015",
+    "image": {
+        "kind": "FileSource",
+        "path": "../images/beer_204.png"
+    },
+    "pdfPage": {
+        "kind": "FileSource",
+        "path": "../pdf_pages/page_204.pdf"
+    },
+    "description": "No Label is a postmodern, postgender non-binary brew; the world\u0092s first beer made with transgender hops. Brewed with whole hop bines that have spontaneously changed from female to male, no label goes its own way. No Label balances a light, biscuity dryness from the malt base with delicate hints of fruity esters gifted by the fermentation. Finally, dry- hopping adds a layer of new world tropical & pine flavours that add a unique twist to this classic K\u00f6lsch style beer. All profits from the sales of this beer were donated to LGBTQI+ events organisers Queerest of the Queer.",
+    "brewersTip": "Dry hop using a muslin bag in order to give you the best chance at getting the signature K\u00f6lsch clarity.",
+    "basics": {
+        "volume": {
+            "litres": 20.0,
+            "galons": 5.0
+        },
+        "boilVolume": {
+            "litres": 25.0,
+            "galons": 6.6
+        },
+        "abv": 4.5,
+        "targetOg": 1043.0,
+        "targetFg": 1009.0,
+        "ebc": 10.0,
+        "ibu": 25.0,
+        "srm": 5.0,
+        "ph": 4.2,
+        "attenuationLevel": 79.1
+    },
+    "foodPairings": [
+        "Strawberry and basil salad with feta",
+        "Lemon baked monkfish",
+        "Peach cobbler"
+    ],
+    "ingredients": {
+        "malts": [
+            {
+                "name": "Pilsner",
+                "kgs": 3.13,
+                "lbs": 6.88
+            },
+            {
+                "name": "Wheat",
+                "kgs": 0.25,
+                "lbs": 0.55
+            },
+            {
+                "name": "Munich",
+                "kgs": 0.25,
+                "lbs": 0.55
+            }
+        ],
+        "hops": [
+            {
+                "name": "Mosaic",
+                "amount": 2.5,
+                "when": "Start",
+                "attribute": "Bitter"
+            },
+            {
+                "name": "Cascade",
+                "amount": 12.5,
+                "when": "Middle",
+                "attribute": "Flavour"
+            },
+            {
+                "name": "Jester",
+                "amount": 50.0,
+                "when": "End",
+                "attribute": "Flavour"
+            },
+            {
+                "name": "Cascade",
+                "amount": 50.0,
+                "when": "Dry Hop",
+                "attribute": "Aroma"
+            },
+            {
+                "name": "Mosaic",
+                "amount": 50.0,
+                "when": "Dry Hop",
+                "attribute": "Aroma"
+            }
+        ],
+        "yeasts": [
+            {
+                "name": "Wyeast 1056 - American Ale\u0099"
+            }
+        ],
+        "alternativeDescription": null
+    },
+    "methodTimings": {
+        "mashTemps": [
+            {
+                "celsius": 65.0,
+                "fahrenheit": 149.0,
+                "time": 149.0
+            }
+        ],
+        "mashTips": [],
+        "fermentation": {
+            "celsius": 15.0,
+            "fahrenheit": 15.0,
+            "tips": []
+        },
+        "twists": null
+    },
+    "packaging": "Bottle",
+    "parsingErrors": null
+}

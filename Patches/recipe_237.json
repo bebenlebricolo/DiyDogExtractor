@@ -4,8 +4,9 @@
     "number": 237,
     "pageNumber": 237,
     "tags": [
-        "SPICY, CHEWY, SWEET"
+        "Spicy, Chewy, Sweet"
     ],
+    "style": null,
     "firstBrewed": "2016",
     "image": {
         "kind": "FileSource",
@@ -13,7 +14,7 @@
     },
     "pdfPage": {
         "kind": "FileSource",
-        "path": "../pdf_pages/beer_237.pdf"
+        "path": "../pdf_pages/page_237.pdf"
     },
     "description": "A huge, chewy barley wine, loaded with bitterness and balanced with a sweet and spicy combo of mango and chili. A concept brew which was so well received, we tweaked it and it became Neon Overlord.",
     "basics": {

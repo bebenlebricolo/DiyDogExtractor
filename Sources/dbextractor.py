@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-import os
+import string
 import re
 import sys
 import math
@@ -24,6 +24,7 @@ from fitz.utils import get_page_pixmap
 from .Utils.parsing import parse_line
 from .Utils.logger import Logger
 from .Utils.downloader import download_pdf
+from .Utils.recipe_service import dump_all_recipes_to_disk
 from .Models.blocks import PageBlocks, Coordinates, TextBlock, TextElement
 from .Models import recipe as rcp
 from .Models import record as rec
@@ -289,8 +290,8 @@ def extract_header(elements : list[TextElement], recipe : rcp.Recipe) -> rcp.Rec
             else :
                 recipe.name.value += name_comps_aligned[i].text
             consumed_elements.append(name_comps_aligned[i])
-    recipe.name.value = recipe.name.value.rstrip(" ")
-    recipe.subtitle.value = recipe.subtitle.value.rstrip(" ")
+    recipe.name.value = string.capwords(recipe.name.value.rstrip(" ").lower())
+    recipe.subtitle.value = string.capwords(recipe.subtitle.value.rstrip(" ").lower())
 
     # We need to keep track of the consumed element so that they don't fall into the tag lines
     consumed_elements.append(number_element)
@@ -374,6 +375,7 @@ def extract_header(elements : list[TextElement], recipe : rcp.Recipe) -> rcp.Rec
             remaining_elements.append(element)
 
     if len(remaining_elements) != 0 :
+        tmp_tags : list[str] = []
         if not recipe.tags.value :
             recipe.tags.value = []
 
@@ -387,12 +389,22 @@ def extract_header(elements : list[TextElement], recipe : rcp.Recipe) -> rcp.Rec
                     # We have some tag lines that contain stuff like "12 th anniversary", but they are encoded by the PDF as two
                     # separate items for some reasons
                     if part == "TH" and i != 0 and remaining_elements[i - 1].text.isnumeric() :
-                        recipe.tags.value[len(recipe.tags.value) - 1] += "th"
+                        tmp_tags[len(tmp_tags) - 1] += "th"
                     else :
                         # Popping out all parasitic characters such as " (FANZINE) " -> "FANZINE"
-                        recipe.tags.value.append(part.strip().lstrip("(").rstrip(")").strip())
+                        cleaned = part.strip().lstrip("(").rstrip(")").strip()
+                        # Lowercasing in order to uniformize a little bit the dataset
+                        tmp_tags.append(string.capwords(cleaned.lower()))
 
-
+        # Filter out wrong tags
+        # This small limit was found after all tags were parsed and further analyzed via reverse db indexing and value sorting
+        # In some rare circumstances, we get tags such as "0", "1083", "12th" which are too short
+        # and generally do not carry any useful piece of information, so we can discard them now instead of having to clean this up later on.
+        tmp_tags = list(set(tmp_tags)) # -> Removing doubles
+        for tag in tmp_tags :
+            if len(tag) < 5 :
+                continue
+            recipe.tags.value.append(tag)
 
     return recipe
 
@@ -1425,13 +1437,8 @@ def main(args) :
 
     if aggregate_results :
         logger.log("Dumping aggregated recipe json book as 'all_recipes.json'.")
-        json_data = []
-        for recipe in recipes_list :
-            json_data.append(recipe.to_json())
         filepath = cached_recipes_dir.joinpath("all_recipes.json")
-        with open(filepath, "w") as file :
-            json.dump({"recipes" : json_data}, file, indent=4)
-
+        dump_all_recipes_to_disk(filepath, recipes_list)
 
     # Configuring deployment directory
     deploy_dir = CACHE_DIRECTORY.joinpath("deployed")

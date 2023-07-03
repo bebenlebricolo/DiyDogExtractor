@@ -1,0 +1,118 @@
+{
+    "name": "ATLANTIC IPA ALE",
+    "subtitle": "",
+    "number": 24,
+    "tags": [
+        "Ipa Of Yesteryear"
+    ],
+    "style" : null,
+    "firstBrewed": "DECEMBER 2008",
+    "image": {
+        "kind": "FileSource",
+        "path": "../images/beer_24.png"
+    },
+    "pdfPage": {
+        "kind": "FileSource",
+        "path": "../pdf_pages/page_24.pdf"
+    },
+    "description": "Like IPA historically would have been. Part of this beer was aged on a fishing boat in an oak cask and released as \"Atlantic IPA\".",
+    "brewersTip": "Ensure you aerate the wort to get a nice clean fermentation and really get the best out of the UK hops.",
+    "basics": {
+        "volume": {
+            "litres": 20.0,
+            "galons": 5.0
+        },
+        "boilVolume": {
+            "litres": 25.0,
+            "galons": 6.6
+        },
+        "abv": 8.0,
+        "targetOg": 1074.0,
+        "targetFg": 1013.0,
+        "ebc": 55.0,
+        "ibu": 80.0,
+        "srm": 13.0,
+        "ph": 4.4,
+        "attenuationLevel": 82.0
+    },
+    "foodPairings": [
+        "Smoked venison sausage",
+        "Very mature Cheddar",
+        "Fettucine alfredo"
+    ],
+    "ingredients": {
+        "malts": [
+            {
+                "name": "Extra Pale",
+                "kgs": 5.73,
+                "lbs": 12.62
+            },
+            {
+                "name": "Amber",
+                "kgs": 0.52,
+                "lbs": 1.147
+            },
+            {
+                "name": "Crystal",
+                "kgs": 0.52,
+                "lbs": 1.147
+            }
+        ],
+        "hops": [
+            {
+                "name": "First Gold",
+                "amount": 146.0,
+                "when": "Start",
+                "attribute": "Bitter"
+            },
+            {
+                "name": "East Kent Golding",
+                "amount": 47.0,
+                "when": "Middle",
+                "attribute": "Flavour"
+            },
+            {
+                "name": "Fuggles",
+                "amount": 46.0,
+                "when": "Middle",
+                "attribute": "Flavour"
+            },
+            {
+                "name": "Bramling Cross",
+                "amount": 62.5,
+                "when": "End",
+                "attribute": "Flavour"
+            },
+            {
+                "name": "Goldings",
+                "amount": 104.0,
+                "when": "Dry Hop",
+                "attribute": "Aroma"
+            }
+        ],
+        "yeasts": [
+            {
+                "name": "US-05"
+            }
+        ],
+        "alternativeDescription": null
+    },
+    "methodTimings": {
+        "mashTemps": [
+            {
+                "celsius": 65.0,
+                "fahrenheit": 149.0,
+                "time": 75.0
+            }
+        ],
+        "mashTips": [],
+        "fermentation": {
+            "celsius": 19.0,
+            "fahrenheit": 19.0,
+            "tips": []
+        },
+        "twists": null
+    },
+    "packaging": "Bottle",
+    "parsingErrors": null
+}

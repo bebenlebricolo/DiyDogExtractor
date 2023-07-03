@@ -72,6 +72,14 @@ class Malt(Jsonable) :
         self.kgs = self._read_prop("kgs", content, 0.0)
         self.lbs = self._read_prop("lbs", content, 0.0)
 
+# Sometimes extra ingredients are added in the "malt" section to depict ingredients that
+# are added during the mash process
+class ExtraMash(Malt):
+    def from_malt(self, malt : Malt) :
+        self.kgs = malt.kgs
+        self.lbs = malt.lbs
+        self.name = malt.name
+
 @dataclass
 class Hop(Jsonable) :
     name : str  = ""
@@ -93,6 +101,16 @@ class Hop(Jsonable) :
         self.when = self._read_prop("when", content, "")
         self.attribute = self._read_prop("attribute", content, "")
 
+# Sometimes extra ingredients are added in the "malt" section to depict ingredients that
+# are added during the mash process
+class ExtraBoil(Hop):
+    def from_hop(self, hop : Hop) :
+        self.amount = hop.amount
+        self.attribute = hop.attribute
+        self.name = hop.name
+        self.when = hop.when
+
+
 @dataclass
 class Yeast(Jsonable) :
     name : str = ""
@@ -109,21 +127,32 @@ class Ingredients(Jsonable) :
     HOPS_KEY = "hops"
     YEASTS_KEY = "yeasts"
     DESCRIPTION_KEY = "alternativeDescription"
+    EXTRA_MASH = "extraMash"
+    EXTRA_BOIL = "extraBoil"
 
     malts : list[Malt] = field(default_factory=list)
     hops : list[Hop] = field(default_factory=list)
     yeasts : list[Yeast] = field(default_factory=list)
     alternative_description : Optional[str] = None
 
+    extra_mash : Optional[list[ExtraMash]] = None   # Extra mashing ingredient (such as sugar)
+    extra_boil : Optional[list[ExtraBoil]] = None   # Extra boil ingredient (such as coffee beans)
+
     def to_json(self) -> dict:
         malts_list = [x.to_json() for x in self.malts]
         hops_list = [x.to_json() for x in self.hops]
         yeast_list = [x.to_json() for x in self.yeasts]
 
+        # Optional extra fields
+        extra_mash_list = [x.to_json() for x in self.extra_mash] if self.extra_mash else None
+        extra_boil_list = [x.to_json() for x in self.extra_boil] if self.extra_boil else None
+
         return {
             self.MALTS_KEY : malts_list,
             self.HOPS_KEY : hops_list,
             self.YEASTS_KEY : yeast_list,
+            self.EXTRA_MASH : extra_mash_list,
+            self.EXTRA_BOIL : extra_boil_list,
             self.DESCRIPTION_KEY : self.alternative_description
         }
 
@@ -149,9 +178,41 @@ class Ingredients(Jsonable) :
                 new_yeast.from_json(yeast)
                 self.yeasts.append(new_yeast)
 
+        # Parse extra mashing ingredient (most of the time absent)
+        if self.EXTRA_MASH in content and content[self.EXTRA_MASH] is not None :
+            self.extra_mash = []
+            for extra in content[self.EXTRA_MASH]:
+                new_extra = ExtraMash()
+                new_extra.from_json(extra)
+                self.extra_mash.append(new_extra)
+
+        # Parse extra boil ingredient (most of the time absent)
+        if self.EXTRA_BOIL in content and content[self.EXTRA_BOIL] is not None:
+            self.extra_boil = []
+            for extra in content[self.EXTRA_BOIL]:
+                new_extra = ExtraBoil()
+                new_extra.from_json(extra)
+                self.extra_boil.append(new_extra)
+
+
         if self.DESCRIPTION_KEY in content :
             self.alternative_description = content[self.DESCRIPTION_KEY]
 
+    def add_extra_mash(self, extra_mash : ExtraMash) :
+        if self.extra_mash is None :
+            self.extra_mash = []
+        self.extra_mash.append(extra_mash)
+
+    def add_extra_boil(self, extra_boil : ExtraBoil) :
+        if self.extra_boil is None :
+            self.extra_boil = []
+        self.extra_boil.append(extra_boil)
+
+    def remove_malt(self, malt : Malt) :
+        self.malts.remove(malt)
+
+    def remove_hop(self, hop : Hop) :
+        self.hops.remove(hop)
 
 @dataclass
 class Temperature(Jsonable) :
@@ -278,6 +339,7 @@ class PackagingType(Enum) :
 class Recipe(Jsonable) :
     name : JsonProperty[str]                            # Beer title
     subtitle : JsonProperty[str]                        # Beer subtitle, contains tags and other information
+    style : JsonOptionalProperty[str]                   # Beer style
     description : JsonProperty[str]
     number : JsonProperty[int]                          # Refers to the "#1" tag
     tags : JsonOptionalProperty[list[str]]              # tag line
@@ -323,6 +385,7 @@ class Recipe(Jsonable) :
 
     def __init__( self, name : Optional[str] = None,
                         subtitle : Optional[str] = None,
+                        style : Optional[str] = None,
                         number : Optional[int] = None,
                         tags : Optional[list[str]] = None,
                         first_brewed : Optional[str] = None,
@@ -340,6 +403,7 @@ class Recipe(Jsonable) :
         self.brewers_tip = JsonOptionalProperty("brewersTip", None)
         self.name = JsonProperty('name', "")
         self.subtitle =  JsonProperty('subtitle', "")
+        self.style =  JsonOptionalProperty('style', None)
         self.number =  JsonProperty('number', 0)
         self.tags =  JsonOptionalProperty('tags', None)
         self.first_brewed = JsonProperty("firstBrewed", "")
@@ -356,6 +420,8 @@ class Recipe(Jsonable) :
             self.description.value = description
         if subtitle :
             self.subtitle.value = subtitle
+        if style :
+            self.style.value = style
         if number :
             self.number.value = number
         if tags :
@@ -384,6 +450,7 @@ class Recipe(Jsonable) :
         return {
             self.name._prop_key : self.name.value,
             self.subtitle._prop_key : self.subtitle.value,
+            self.style._prop_key : self.style.value,
             self.number._prop_key : self.number.value,
             self.tags._prop_key : self.tags.value,
             self.first_brewed._prop_key : self.first_brewed.value,
@@ -405,6 +472,7 @@ class Recipe(Jsonable) :
         self.number.value = self.number.try_read(content, 0)
         self.tags.value = self.tags.read(content)
         self.first_brewed.value = self.first_brewed.try_read(content, "")
+        self.style.value = self.style.read(content)
 
         # Image and Original PDF page deserve special handling, as they can be both a FileRecord or Cloud Record
         image_node = self.image.get_node(content)
@@ -455,6 +523,7 @@ class Recipe(Jsonable) :
         identical &= self.name == other.name                            #type: ignore
         identical &= self.subtitle == other.subtitle                    #type: ignore
         identical &= self.number == other.number                        #type: ignore
+        identical &= self.style == other.style                          #type: ignore
         identical &= self.tags == other.tags                            #type: ignore
         identical &= self.first_brewed == other.first_brewed            #type: ignore
         identical &= self.description == other.description              #type: ignore
@@ -466,3 +535,6 @@ class Recipe(Jsonable) :
         identical &= self.parsing_errors == other.parsing_errors        #type: ignore
         identical &= self.food_pairing == other.food_pairing            #type: ignore
         return identical
+
+
+

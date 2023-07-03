@@ -4,8 +4,9 @@ import sys
 import argparse
 import json
 
-from ..Utils.filesystem import list_files_pattern, ensure_folder_exist
 from ..Models import recipe as rcp
+from ..Utils.filesystem import list_files_pattern, ensure_folder_exist
+from ..Utils.recipe_service import dump_all_recipes_to_disk
 
 
 def patch_all_recipes(dep_recipes_folder : Path, patch_folder : Path) -> bool:
@@ -58,11 +59,7 @@ def patch_all_recipes(dep_recipes_folder : Path, patch_folder : Path) -> bool:
 
     # Overwrite all_recipes.json with the newer version
     print("Rewriting all_recipes.json with updated dataset ...")
-    json_data = []
-    for recipe in all_recipes_parsed :
-        json_data.append(recipe.to_json())
-    with open(all_recipes_file, "w") as file :
-        json.dump({"recipes" : json_data}, file, indent=4)
+    dump_all_recipes_to_disk(all_recipes_file, all_recipes_parsed)
     print("Patching done !")
 
     return True

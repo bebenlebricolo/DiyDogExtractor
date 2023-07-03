@@ -1,0 +1,121 @@
+{
+    "name": "B-SIDES \u0096 BERLINER WEISSE WITH",
+    "subtitle": "",
+    "number": 209,
+    "tags": [
+        "Fruity Berliner Weisse",
+        "Raspberries And Rhubarb"
+    ],
+    "style": null,
+    "firstBrewed": "",
+    "image": {
+        "kind": "FileSource",
+        "path": "../images/beer_209.png"
+    },
+    "pdfPage": {
+        "kind": "FileSource",
+        "path": "../pdf_pages/page_209.pdf"
+    },
+    "description": "Tart, dry and acidic with a punch of summer berry as rhubarb crumble.",
+    "brewersTip": "Fruits added at the end of the boil for 10 mins and additional added in maturation. Boil for no more than 15 mins.",
+    "basics": {
+        "volume": {
+            "litres": 20.0,
+            "galons": 5.0
+        },
+        "boilVolume": {
+            "litres": 25.0,
+            "galons": 6.6
+        },
+        "abv": 3.6,
+        "targetOg": 1040.0,
+        "targetFg": 1007.0,
+        "ebc": -1.0,
+        "ibu": 8.0,
+        "srm": -1.0,
+        "ph": 3.2,
+        "attenuationLevel": 83.0
+    },
+    "foodPairings": [
+        "Grilled salmon",
+        "Mac and cheese fries",
+        "Cheesecake with raspberry coulis"
+    ],
+    "ingredients": {
+        "malts": [
+            {
+                "name": "Propino Pale Malt",
+                "kgs": 1.63,
+                "lbs": 3.58
+            },
+            {
+                "name": "Wheat Malt",
+                "kgs": 1.63,
+                "lbs": 3.58
+            },
+            {
+                "name": "Acidulated Malt for kettle souring",
+                "kgs": 0.03,
+                "lbs": 0.05
+            }
+        ],
+        "hops": [
+            {
+                "name": "Bramling Cross",
+                "amount": 10.0,
+                "when": "Middle",
+                "attribute": "Bitter"
+            }
+        ],
+        "yeasts": [
+            {
+                "name": "Wyeast 1056 American Ale\u0099"
+            }
+        ],
+        "alternativeDescription": null
+    },
+    "methodTimings": {
+        "mashTemps": [
+            {
+                "celsius": 60.0,
+                "fahrenheit": 140.0,
+                "time": 10.0
+            },
+            {
+                "celsius": 65.0,
+                "fahrenheit": 149.0,
+                "time": 30.0
+            },
+            {
+                "celsius": 72.0,
+                "fahrenheit": 162.0,
+                "time": 10.0
+            },
+            {
+                "celsius": 78.0,
+                "fahrenheit": 172.0,
+                "time": 5.0
+            }
+        ],
+        "mashTips": [],
+        "fermentation": {
+            "celsius": 21.0,
+            "fahrenheit": 21.0,
+            "tips": []
+        },
+        "twists": [
+            {
+                "name": "Raspberries in the boil, rhubarb at maturation. Soured naturally using the kettle souring technique",
+                "amount": null,
+                "when": null
+            },
+            {
+                "name": "Raspberries",
+                "amount": null,
+                "when": null
+            }
+        ]
+    },
+    "packaging": "Keg",
+    "parsingErrors": null
+}

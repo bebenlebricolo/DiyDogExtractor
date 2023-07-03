@@ -1,0 +1,112 @@
+{
+    "name": "AB:01",
+    "subtitle": "",
+    "number": 41,
+    "tags": [
+        "Vanilla Bean Infused Belgian Quad"
+    ],
+    "style": null,
+    "firstBrewed": "FEBRUARY 2010",
+    "image": {
+        "kind": "FileSource",
+        "path": "../images/beer_41.png"
+    },
+    "pdfPage": {
+        "kind": "FileSource",
+        "path": "../pdf_pages/page_41.pdf"
+    },
+    "description": "Made with the yeast from a bottle of Westvleteren 12, aged with vanilla beans. Only available in 375ml bottles. Limited to 3200 bottles. The first in our Abstrakt series.",
+    "brewersTip": "To capture yeast from another bottle conditioned beer, simply make up a starter with some wort and grow the yeast up. Once it goes through a fermentation at 1 litre it can go straight into your wort to start the main fermentation.",
+    "basics": {
+        "volume": {
+            "litres": 20.0,
+            "galons": 5.0
+        },
+        "boilVolume": {
+            "litres": 25.0,
+            "galons": 6.6
+        },
+        "abv": 10.2,
+        "targetOg": 1095.0,
+        "targetFg": 1018.0,
+        "ebc": 16.0,
+        "ibu": 20.0,
+        "srm": 8.0,
+        "ph": 4.1,
+        "attenuationLevel": 81.0
+    },
+    "foodPairings": [
+        "Baked brown butter lobster",
+        "Apple crumble and custard",
+        "Coffee carrot cake"
+    ],
+    "ingredients": {
+        "malts": [
+            {
+                "name": "Extra Pale",
+                "kgs": 7.75,
+                "lbs": 17.07
+            },
+            {
+                "name": "Wheat",
+                "kgs": 0.5,
+                "lbs": 1.1
+            },
+            {
+                "name": "Munich",
+                "kgs": 0.5,
+                "lbs": 1.1
+            }
+        ],
+        "hops": [
+            {
+                "name": "Saaz",
+                "amount": 25.0,
+                "when": "Start",
+                "attribute": "Bitter"
+            },
+            {
+                "name": "Saaz",
+                "amount": 15.0,
+                "when": "End",
+                "attribute": "Flavour"
+            },
+            {
+                "name": "Styrian Goldings",
+                "amount": 15.0,
+                "when": "End",
+                "attribute": "Flavour"
+            }
+        ],
+        "yeasts": [
+            {
+                "name": "Westvleteren 12 (recovered from a bottle)"
+            }
+        ],
+        "alternativeDescription": null
+    },
+    "methodTimings": {
+        "mashTemps": [
+            {
+                "celsius": 63.0,
+                "fahrenheit": 145.0,
+                "time": 90.0
+            }
+        ],
+        "mashTips": [],
+        "fermentation": {
+            "celsius": 22.0,
+            "fahrenheit": 22.0,
+            "tips": []
+        },
+        "twists": [
+            {
+                "name": "Two split vanilla pods in cold conditioning",
+                "amount": null,
+                "when": null
+            }
+        ]
+    },
+    "packaging": "Bottle",
+    "parsingErrors": null
+}

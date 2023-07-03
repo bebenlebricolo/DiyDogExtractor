@@ -1,9 +1,11 @@
 requests>=2.28.0
 svgwrite>=1.4.3
-pypdf
+pypdf>=3.9.1
 pytest>=7.2.0
 opencv-python>=4.7.0
 matplotlib>=3.6.2
 scikit-image>=0.20.0
-PyMuPDF
-rembg
+PyMuPDF>=1.22.3
+rembg>=2.0.43
+python-levenshtein>=0.21.0
+thefuzz>=0.19.0

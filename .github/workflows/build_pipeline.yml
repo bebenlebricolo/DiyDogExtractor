@@ -58,7 +58,7 @@ jobs:
 
     - name : run DiyDog extraction services
       run : |
-        python -m Sources.main true false true
+        python -m Sources.dbextractor true false true
 
       # Now it's uploading logs
     - name: Archive extraction session logs
@@ -70,6 +70,12 @@ jobs:
     - name : Patch the database with known-good data
       run : |
         python -m Sources.ScriptingTools.patcher Patches Sources/.cache/deployed/recipes
+
+    - name : Run the database sanitization tool
+      run : |
+        python -m Sources.dbsanitizer References Sources/.cache/deployed Sources/.cache/deployed/dbsanitizer
+        mv Sources/.cache/deployed/recipes/all_recipes.json Sources/.cache/deployed/recipes/all_recipes_before_sanitization.json
+        cp Sources/.cache/deployed/dbsanitizer/all_recipes.json Sources/.cache/deployed/recipes/all_recipes.json
 
     # Now it's time to upload the newly built database
     - name: Archive extracted database for diydog book
