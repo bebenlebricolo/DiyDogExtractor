@@ -48,6 +48,13 @@ def fuzzy_search_in_ref(tag : str, ref_list : list[T], order_sensitive : bool = 
             for alias in prop.aliases.value : #type:ignore
                 result = compute_string_ratios(tag, alias, order_sensitive)
 
+                # If any alias has a 100 match score (the whole alias exactly match the whole input sequence)
+                # Then we're sure that we've found the right item, so skip next ones.
+                # This is to ensure that the geometric mean does not tear down our results in case a really good match is found, as it often happens when a target prop has multiple
+                # matching aliases versus another item that has no aliases.
+                # It happens because out of 3 aliases, maybe one will have a very good match while the other ones not that much (20 * 100 * 35)^1/3 = 41 whereas we have an exact match in there !
+                if result >= 98 :
+                    break
                 # Required because geometric mean is sensitive to zeros and non positive values, so artificially set the score to 1 to prevent
                 # a numeric failure -> clamp result to 1
                 ratios.append(normalise_ratio_result(result))

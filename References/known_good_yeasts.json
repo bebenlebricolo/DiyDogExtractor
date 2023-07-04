@@ -9,16 +9,16 @@
             "url" : "https://beermaverick.com/yeast/be-134-safale-be-134-fermentis/"
         },
         {
-            "name" : "Lalvin - ec-1118",
+            "name" : "Lalvin - EC-1118",
             "manufacturer" : "Lallemand",
             "aliases" : [
                 "Champagne",
-                "ec-1118"
+                "EC-1118"
             ],
             "url" : "https://www.lallemandbrewing.com/en/continental-europe/product-details/lalvin-ec-1118/"
         },
         {
-            "name" : "Saflager S-189",
+            "name" : "Saflager - S-189",
             "manufacturer" : "Fermentis",
             "aliases":[
                 "S189"
@@ -26,7 +26,7 @@
             "url" : "https://beermaverick.com/yeast/s-189-saflager-s-189-fermentis/"
         },
         {
-            "name" : "Saflager W-34/70",
+            "name" : "Saflager - W-34/70",
             "manufacturer" : "Fermentis",
             "aliases":[
                 "W-34/70"
@@ -34,7 +34,7 @@
             "url" : "https://beermaverick.com/yeast/w-34-70-saflager-w-34-70-fermentis/"
         },
         {
-            "name" : "Safale US-05",
+            "name" : "Safale - US-05",
             "manufacturer" : "Fermentis",
             "aliases":[
                 "US-05"
@@ -42,16 +42,7 @@
             "url" : "https://beermaverick.com/yeast/us-05-safale-us-05-fermentis/"
         },
         {
-            "name" : "White Labs WLP4000",
-            "manufacturer" : "White Labs",
-            "aliases" :[
-                "WLP4000",
-                "Vermont Ale"
-            ],
-            "url" : "https://beermaverick.com/yeast/wlp4000-vermont-ale-the-yeast-bay/"
-        },
-        {
-            "name" : "SafAle WB-06",
+            "name" : "SafAle - WB-06",
             "manufacturer" : "Fermentis",
             "aliases" :[
                 "WB-06"
@@ -59,7 +50,17 @@
             "url" : "https://beermaverick.com/yeast/wb-06-safbrew-wb-06-fermentis/"
         },
         {
-            "name" : "WLP 351 Bavarian Weizen",
+            "name" : "WLP4000 - Vermont Ale",
+            "manufacturer" : "White Labs",
+            "aliases" :[
+                "WLP 4000",
+                "White Labs",
+                "Vermont Ale"
+            ],
+            "url" : "https://beermaverick.com/yeast/wlp4000-vermont-ale-the-yeast-bay/"
+        },
+        {
+            "name" : "WLP351 - Bavarian Weizen",
             "manufacturer" : "White Labs",
             "aliases" :[
                 "WLP 351",
@@ -68,7 +69,7 @@
             "url" : "https://beermaverick.com/yeast/wlp351-bavarian-weizen-ale-yeast-white-labs/"
         },
         {
-            "name" : "WLP013 London Ale",
+            "name" : "WLP013 - London Ale",
             "manufacturer" : "White Labs",
             "aliases" :[
                 "WLP 013",
@@ -77,7 +78,7 @@
             "url" : "https://beermaverick.com/yeast/wlp013-london-ale-yeast-white-labs/"
         },
         {
-            "name" : "WLP099 Super High Gravity Ale",
+            "name" : "WLP099 - Super High Gravity Ale",
             "manufacturer" : "White Labs",
             "aliases" :[
                 "WLP 099",
@@ -86,16 +87,7 @@
             "url" : "https://beermaverick.com/yeast/wlp099-super-high-gravity-ale-yeast-white-labs/"
         },
         {
-            "name" : "WLP500 Monastery Ale",
-            "manufacturer" : "White Labs",
-            "aliases" :[
-                "WLP 500",
-                "Monastery Ale"
-            ],
-            "url" : "https://beermaverick.com/yeast/wlp500-monastery-ale-yeast-white-labs/"
-        },
-        {
-            "name" : "WLP500 Monastery Ale",
+            "name" : "WLP500 - Monastery Ale",
             "manufacturer" : "White Labs",
             "aliases" :[
                 "WLP 500",
@@ -203,15 +195,6 @@
             "url" : "https://beermaverick.com/yeast/wy3724-belgian-saison-wyeast"
         },
         {
-            "name" : "Wyeast 3787 - Trappist High\u0099",
-            "manufacturer" : "WYeast",
-            "aliases" :[
-                "3787",
-                "Trappist High"
-            ],
-            "url" : "https://wyeastlab.com/product/belgian-high-gravity/"
-        },
-        {
             "name" : "Wyeast 3787 - Belgian High Gravity\u0099",
             "manufacturer" : "WYeast",
             "aliases" :[
@@ -231,7 +214,7 @@
             "url" : "https://beermaverick.com/yeast/wy3944-belgian-witbier-wyeast"
         },
         {
-            "name" : "Wyeast 3031-PC - Saison-Brett Blend",
+            "name" : "Wyeast 3031-PC - Saison-Brett Blend\u0099",
             "manufacturer" : "WYeast",
             "aliases":[
                 "House Brett Blend",
@@ -239,6 +222,13 @@
                 "Saison Brett Blend"
             ],
             "url" : "https://wyeastlab.com/product/saison-brett-blend/"
+        },
+        {
+            "name" : "Westvleteren 12 (recovered from a bottle)",
+            "aliases":[
+                "Westverleteren 12",
+                "recovered from a bottle"
+            ]
         }
     ]
 }
