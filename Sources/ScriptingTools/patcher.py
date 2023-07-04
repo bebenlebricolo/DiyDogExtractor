@@ -24,8 +24,6 @@ def patch_all_recipes(dep_recipes_folder : Path, patch_folder : Path) -> bool:
     patched_recipes : list[rcp.Recipe] = []
     patched_recipes_indexes : list[int] = []
     for patch in patches :
-        print(f"Overwriting patch #{patch.name} in {dep_recipes_folder}")
-        shutil.copyfile(patch, dep_recipes_folder.joinpath(patch.name))
         patched_recipe = rcp.Recipe()
         with open(patch, 'r') as file :
             patched_recipe.from_json(json.load(file))

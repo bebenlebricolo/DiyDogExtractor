@@ -13,6 +13,8 @@ from .Models import recipe as rcp
 from .Models.jsonable import Jsonable
 
 
+from .Utils.fuzzy_search import fuzzy_search_in_ref, StylesProp
+
 @dataclass
 class RefStyle(Jsonable):
     name : str = ""
@@ -40,33 +42,14 @@ class RefStyle(Jsonable):
 
 @dataclass
 class MostProbableHit:
-    distance : float = 0.0
+    ratio : float = 0.0
     style : Optional[RefStyle] = None
 
 
 def compute_string_ratios(tag : str, token : str) -> int :
-    distance = fuzz.token_set_ratio(tag, token)
-    return distance
+    ratio = fuzz.token_set_ratio(tag, token)
+    return ratio
 
-def fuzzy_search_in_ref(tag : str, styles_ref_list : list[RefStyle]) -> MostProbableHit :
-    # Trying to minimize the hamming distance
-    max_ratio = 0
-    most_probable_style = styles_ref_list[0]
-
-    for style in styles_ref_list :
-        local_ratio = compute_string_ratios(tag, style.name)
-        if style.aliases is not None :
-            for alias in style.aliases :
-                alias_distance = compute_string_ratios(tag, alias)
-                if alias_distance > local_ratio :
-                    local_ratio = alias_distance
-
-        if local_ratio > max_ratio :
-            max_ratio = local_ratio
-            most_probable_style = style
-
-
-    return MostProbableHit(style=most_probable_style, distance=max_ratio)
 
 def read_styles_from_file(styles_ref_file : Path) -> list[RefStyle]:
     ref_styles : list[RefStyle] = []
@@ -89,15 +72,13 @@ def read_tags_from_file(tags_file_path : Path) -> list[str] :
 
     return tags_list
 
-def fuzzy_search_on_real_styles(styles_ref: list[RefStyle], specimen_str : str) -> Optional[tuple[str, MostProbableHit]]:
+def fuzzy_search_on_real_styles(styles_ref: list[StylesProp], specimen_str : str, order_sensitive = False) -> Optional[tuple[str, MostProbableHit]]:
     # Perform fuzzy search
     if len(specimen_str) <= 10 :
         return None
 
-    most_probable_hit = fuzzy_search_in_ref(specimen_str, styles_ref)
+    most_probable_hit = fuzzy_search_in_ref(specimen_str, styles_ref, order_sensitive)
     pair = (specimen_str, most_probable_hit)
-    if most_probable_hit.distance >= (len(specimen_str) / 2) :
-        return pair
     return None
 
 def read_keywords_file(keywords_file : Path) -> list[str] :
@@ -147,7 +128,6 @@ def main(args : list[str]):
         return 1
 
     # This algorithm does not perform as well as expected (...)
-    # fuzzy_search_on_real_styles(styles_ref_file , tags_list_file , output_directory , logger)
 
     logger.log("Reading tags from file")
     tags_list : list[str] = []

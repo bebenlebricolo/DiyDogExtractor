@@ -1421,24 +1421,24 @@ def main(args) :
         # Should be correctly indexed at this stage
         if not skip_image_extraction :
             recipe.packaging.value = packaging_type_beer_number_map[recipe.number.value - 1][1]
-        #recipe.packaging = [x[1] for x in packaging_type_beer_number_map if x[0] == recipe.number][0]
 
     # Dump recipes on disk now !
     if not cached_recipes_dir.exists() :
         cached_recipes_dir.mkdir(parents=True)
 
     logger.log("Dumping extracted recipes on disk now !")
-    for recipe in recipes_list :
-        logger.log("Dumping recipe {}, number {}".format(recipe.name.value, recipe.number.value))
-        filename = "recipe_{}.json".format(recipe.number.value)
-        filepath = cached_recipes_dir.joinpath(filename)
-        with open(filepath, "w") as file :
-            json.dump(recipe.to_json(), file, indent=4)
-
     if aggregate_results :
         logger.log("Dumping aggregated recipe json book as 'all_recipes.json'.")
         filepath = cached_recipes_dir.joinpath("all_recipes.json")
         dump_all_recipes_to_disk(filepath, recipes_list)
+    else:
+        logger.log("Dumping single extracted recipes ...")
+        for recipe in recipes_list :
+            logger.log("Dumping recipe {}, number {}".format(recipe.name.value, recipe.number.value))
+            filename = "recipe_{}.json".format(recipe.number.value)
+            filepath = cached_recipes_dir.joinpath(filename)
+            with open(filepath, "w") as file :
+                json.dump(recipe.to_json(), file, indent=4)
 
     # Configuring deployment directory
     deploy_dir = CACHE_DIRECTORY.joinpath("deployed")

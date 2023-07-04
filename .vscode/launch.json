@@ -32,7 +32,7 @@
             "name": "Python: DB Analyser",
             "type": "python",
             "request": "launch",
-            "module": "Sources.ScriptingTools.dbanalyser",
+            "module": "Sources.dbanalyser",
             "justMyCode": false,
             "args": [
                 "Sources/.cache/deployed/recipes/all_recipes.json",

@@ -12,10 +12,10 @@ echo -e "\n################# Starting up db patching tool #################"
 python -m Sources.ScriptingTools.patcher Patches Sources/.cache/deployed/recipes
 
 echo -e "\n################# Starting up db cleanup tool #################"
-python -m Sources.dbsanitizer References Sources/.cache/deployed Sources/.cache/deployed/dbsanitizer
+python -m Sources.dbsanitizer References Sources/.cache/deployed Sources/.cache/dbsanitizer
 
-echo -e "\n################# Overwriting deployed all_recipes.json with cleaned up version #################"
-cp Sources/.cache/deployed/dbsanitizer/all_recipes.json Sources/.cache/deployed/recipes/all_recipes.json
+echo -e "\n################# Cleaning up deployed database #################"
+cp Sources/.cache/dbsanitizer/all_recipes.json Sources/.cache/deployed/recipes/all_recipes.json
 echo "-> Ok !"
 
 echo -e "\n################# Starting up db analysis tool #################"

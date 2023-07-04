@@ -13,30 +13,68 @@ from .Utils import filesystem as fs
 from .Utils.recipe_service import dump_all_recipes_to_disk
 from .Models import recipe as rcp
 from .Models.jsonable import Jsonable, JsonOptionalProperty, JsonProperty
-from .style_finder import read_keywords_file, find_style_with_keywords, fuzzy_search_on_real_styles, read_styles_from_file, RefStyle
+from .style_finder import read_keywords_file, find_style_with_keywords, read_styles_from_file
 from .dbanalyser import read_all_recipes
 from .Models.DBSanizer.known_good_props import *
-from .Utils.fuzzy_search import fuzzy_search_prop, fuzzy_search_in_ref
+from .Utils.fuzzy_search import fuzzy_search_prop, MostProbablePropertyHit
+
+def infer_style_from_name(recipe : rcp.Recipe, styles_reflist : list[StylesProp]) -> None :
+    most_probable_hit = fuzzy_search_prop(styles_reflist, recipe.name.value)
+    if most_probable_hit and most_probable_hit[1].hit and most_probable_hit[1].score >= 50:
+        recipe.style.value = most_probable_hit[1].hit.name.value
+    else :
+        recipe.style.value = None
+
+def infer_style_from_tags_fuzzy_search(recipe : rcp.Recipe, styles_reflist : list[StylesProp]) -> None :
+    if recipe.tags.value is None :
+        return
+
+    # Try with the fuzzy search approach
+    tags_hits_map : list[tuple[str, MostProbablePropertyHit]] = []
+    for tag in recipe.tags.value :
+        most_probable_hit_pair  = fuzzy_search_prop(styles_reflist, tag)
+        if not most_probable_hit_pair :
+            continue
+        tags_hits_map.append(most_probable_hit_pair)
+
+    # We are really out of luck !
+    if len(tags_hits_map) == 0 :
+        return
+
+    sorted_map = sorted(tags_hits_map, key=lambda x: x[1].score)
+    most_probable_hit : MostProbablePropertyHit[StylesProp] = sorted_map[-1][1]
+
+    # Assign max style now
+    if most_probable_hit.score >= 60 and most_probable_hit.hit:
+        recipe.style.value = most_probable_hit.hit.name.value
+    else :
+        recipe.style.value = None
 
 
-def infer_style_from_tags(recipes_list : list[rcp.Recipe], keywords_list : list[str], styles_reflist : list[RefStyle], logger : Logger) -> None :
+def infer_style_for_recipe(recipes_list : list[rcp.Recipe], keywords_list : list[str], styles_reflist : list[StylesProp], logger : Logger) -> None :
     for recipe in recipes_list :
         # Handling styles inferring from tags
         if recipe.tags.value is not None :
             # Adding beer's name and its subtitle, sometimes names carry more data than tags themselves, regarding beer style (...)
             styles = find_style_with_keywords(keywords_list, recipe.tags.value)
-            if len(styles) == 0 :
-                logger.log("   /!\\ Could not retrieve style from tags only : Fuzzy searching style with recipe's name ...")
-                most_probable_hit = fuzzy_search_on_real_styles(styles_reflist, recipe.name.value)
-                if most_probable_hit and most_probable_hit[1].style:
-                    recipe.style.value = most_probable_hit[1].style.name
-                else :
-                    logger.log(f"   /!\\ Could not retrieve style for recipe #{recipe.number.value} : {recipe.name.value}")
-                    recipe.style.value = "Unknown"
-            else :
-                recipe.style.value = styles[0]
+            if len(styles) != 0 :
+                recipe.style.value = styles[0] if styles[0] else "Unknown"
 
-            logger.log(f"Extracted style \"{recipe.style.value}\" for recipe #{recipe.number.value} : {recipe.name.value}")
+        # Fall back on name validation, fuzzy search mode
+        if recipe.style.value is None or recipe.style.value == "Unknown" :
+            logger.log("   /!\\ Could not retrieve style from tags with keywords only : Fuzzy searching style with recipe's name ...")
+            infer_style_from_name(recipe, styles_reflist)
+
+        # Then if the style is still not found, try to go for the tags fuzzy search as a last chance fallback mode
+        if recipe.style.value is None or recipe.style.value == "Unknown" :
+            logger.log("   /!\\ Could not retrieve style from name nor keyworded tags : Fuzzy searching style with recipe's tags as a last chance test ...")
+            infer_style_from_tags_fuzzy_search(recipe, styles_reflist)
+
+        if recipe.style.value is None or recipe.style.value == "Unknown":
+            logger.log(f"   /!\\ Could not retrieve style for recipe #{recipe.number.value} : {recipe.name.value}")
+            recipe.style.value = "Unknown"
+
+        logger.log(f"Extracted style \"{recipe.style.value}\" for recipe #{recipe.number.value} : {recipe.name.value}")
 
 def merge_yeasts(recipes_list : list[rcp.Recipe], yeasts_ref : list[YeastProp], logger : Logger) -> None :
     for recipe in recipes_list :
@@ -130,21 +168,6 @@ def merge_hops(recipes_list : list[rcp.Recipe], hops_ref : list[HopProp], known_
                 recipe.ingredients.value.add_extra_boil(new_boil)
                 recipe.ingredients.value.remove_hop(hop)
 
-
-
-
-
-
-# def read_known_good_yeasts_from_file(yeast_filepath : Path) -> list[YeastProp]:
-#     out_list : list[YeastProp] = []
-#     with open(yeast_filepath, 'r') as file :
-#         content = json.load(file)
-#         for yeast in content["yeasts"] :
-#             new_yeast = YeastProp()
-#             new_yeast.from_json(yeast)
-#             out_list.append(new_yeast)
-#     return out_list
-
 def read_known_good_yeasts_from_file(yeast_filepath : Path) -> list[YeastProp]:
     built_list = read_known_good_prop_from_file(yeast_filepath, PropKind.Yeast)
     cast(list[YeastProp] , built_list)
@@ -229,8 +252,8 @@ def main(args : list[str]):
 
     # Try to infer the right style for each beer
     logger.log("Inferring styles for all recipes ...")
-    refstyle_list = read_styles_from_file(styles_ref_file)
-    infer_style_from_tags(recipes_list, keywords_list, refstyle_list, logger)
+    refstyle_list = read_known_good_styles_from_file(styles_ref_file)
+    infer_style_for_recipe(recipes_list, keywords_list, refstyle_list, logger)
     logger.log("Styles inferring OK!\n\n")
 
     # Try to cleanup yeasts for each recipe

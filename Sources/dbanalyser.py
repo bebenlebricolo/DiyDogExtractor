@@ -4,11 +4,12 @@ import argparse
 import json
 from dataclasses import dataclass, field
 
-from typing import cast
+from typing import Optional, cast, TypeVar, Generic
 from enum import Enum
 
 from .Utils.logger import Logger
 from .Utils import filesystem as fs
+from .Utils.recipe_service import read_all_recipes
 from .Models import recipe as rcp
 from .Models.jsonable import Jsonable
 
@@ -18,6 +19,7 @@ class PropKind(Enum):
     FoodPairing = "foodPairings"
     Malt = "malts"
     Tag = "tags"
+    Style = "styles"
 
 @dataclass
 class BaseMapping(Jsonable):
@@ -49,6 +51,8 @@ class BaseMapping(Jsonable):
                 return FoodPairingMapping()
             case PropKind.Tag :
                 return TagMapping()
+            case PropKind.Style :
+                return StyleMapping()
             case _:
                 raise Exception("Whoops ! Wrong type !")
 
@@ -72,116 +76,86 @@ class TagMapping(BaseMapping) :
 class FoodPairingMapping(BaseMapping) :
     pass
 
-def read_all_recipes(input_file : Path) -> list[rcp.Recipe] :
-    all_recipes : list[rcp.Recipe] = []
-    with open(input_file, 'r') as file :
-        content = json.load(file)
-        for recipe in content["recipes"] :
-            new_recipe = rcp.Recipe()
-            new_recipe.from_json(recipe)
-            all_recipes.append(new_recipe)
+@dataclass
+class StyleMapping(BaseMapping) :
+    pass
 
-    return all_recipes
 
-def extract_hops(all_recipes : list[rcp.Recipe]) -> tuple[list[str], list[HopMapping]] :
-    hops_list : list[str] = [] # List of hops, ordered by name
-    hops_mapping_list : list[HopMapping] = []
+T = TypeVar("T", HopMapping, YeastMapping, TagMapping, MaltMapping, StyleMapping, FoodPairingMapping)
+
+# Tag is a list of str, so it needs to be there as well.
+RP = TypeVar("RP", rcp.Hop, rcp.Malt, rcp.Yeast, str)
+def get_targeted_prop_list_from_recipe(recipe : rcp.Recipe, prop_kind : PropKind) -> Optional[list[RP]] :
+    target_list : list[RP]
+    match prop_kind :
+        case PropKind.Hop :
+            target_list = recipe.ingredients.value.hops #type:ignore
+        case PropKind.Malt :
+            target_list = recipe.ingredients.value.malts #type:ignore
+        case PropKind.Yeast :
+            target_list = recipe.ingredients.value.yeasts #type:ignore
+        case PropKind.Tag :
+            target_list = recipe.tags.value #type:ignore
+        case PropKind.FoodPairing :
+            target_list = recipe.food_pairing.value #type:ignore
+        case PropKind.Style :
+            # Making up a fake list of a single style string to be used in the more general list algorithm
+            target_list = [recipe.style.value] #type:ignore
+        case _:
+            raise Exception("Invalid property !")
+    return target_list
+
+def extract_properties(all_recipes : list[rcp.Recipe], prop_kind : PropKind) -> tuple[list[str] , list[T]] :
+    props_mapping_list : list[T] = []
+
     for recipe in all_recipes :
-        for hop in recipe.ingredients.value.hops :
-            if not hop.name in hops_list :
-                hops_list.append(hop.name)
-                hops_mapping_list.append(HopMapping(hop.name, [recipe.number.value]))
-            else:
-                # Find the mapped hop
-                hop_mapping = [x for x in hops_mapping_list if x.name == hop.name][0]
-                if recipe.number.value not in hop_mapping.found_in_beers :
-                    hop_mapping.found_in_beers.append(recipe.number.value)
+        target_list = get_targeted_prop_list_from_recipe(recipe, prop_kind)
 
-    return (hops_list, hops_mapping_list)
-
-def extract_malts(all_recipes : list[rcp.Recipe]) -> tuple[list[str], list[MaltMapping]] :
-    malts_list : list[str] = [] # List of malts, ordered by name
-    malts_mapping_list : list[MaltMapping] = []
-    for recipe in all_recipes :
-        for malt in recipe.ingredients.value.malts :
-            if not malt.name in malts_list :
-                malts_list.append(malt.name)
-                malts_mapping_list.append(MaltMapping(malt.name, [recipe.number.value]))
-            else:
-                # Find the mapped hop
-                malt_mapping = [x for x in malts_mapping_list if x.name == malt.name][0]
-                if recipe.number.value not in malt_mapping.found_in_beers :
-                    malt_mapping.found_in_beers.append(recipe.number.value)
-
-    return (malts_list, malts_mapping_list)
-
-def extract_yeasts(all_recipes : list[rcp.Recipe]) -> tuple[list[str], list[YeastMapping]] :
-    yeasts_list : list[str] = [] # List of yeasts, ordered by name
-    yeasts_mapping_list : list[YeastMapping] = []
-    for recipe in all_recipes :
-        for yeast in recipe.ingredients.value.yeasts :
-            if not yeast.name in yeasts_list :
-                yeasts_list.append(yeast.name)
-                yeasts_mapping_list.append(YeastMapping(yeast.name, [recipe.number.value]))
-            else:
-                # Find the mapped yeast
-                yeast_mapping = [x for x in yeasts_mapping_list if x.name == yeast.name][0]
-                if recipe.number.value not in yeast_mapping.found_in_beers :
-                    yeast_mapping.found_in_beers.append(recipe.number.value)
-
-    return (yeasts_list, yeasts_mapping_list)
-
-def extract_tags(all_recipes : list[rcp.Recipe]) -> tuple[list[str], list[TagMapping]] :
-    tags_list : list[str] = [] # List of tags, ordered by name
-    tags_mapping_list : list[TagMapping] = []
-    for recipe in all_recipes :
-        if recipe.tags.value is None :
+        # Sometimes some elements are None (such as the tags list), skip them
+        if target_list is None :
             continue
-        for tag in recipe.tags.value :
-            if not tag in tags_list :
-                tags_list.append(tag)
-                tags_mapping_list.append(TagMapping(tag, [recipe.number.value]))
+
+        for elem in target_list :
+            name = ""
+            if prop_kind in [PropKind.Style, PropKind.Tag, PropKind.FoodPairing] :
+                # Those are single string elements, so they can be appended directly
+                name = elem
+            elif hasattr(elem, "name") :
+                name = elem.name
             else:
-                # Find the mapped tag
-                tag_mapping = [x for x in tags_mapping_list if x.name == tag][0]
-                if recipe.number.value not in tag_mapping.found_in_beers :
-                    tag_mapping.found_in_beers.append(recipe.number.value)
+                # Don't know how to treat this one
+                continue
 
-    return (tags_list, tags_mapping_list)
+            # Sometimes getting None properties (like missing styles)
+            if not name and prop_kind == PropKind.Style:
+                name = "Unknown"
 
-def extract_food_pairing(all_recipes : list[rcp.Recipe]) -> tuple[list[str], list[FoodPairingMapping]] :
-    fps_list : list[str] = [] # List of food pairings, ordered by name
-    fps_mapping_list : list[FoodPairingMapping] = []
-    for recipe in all_recipes :
-        if recipe.food_pairing.value is None :
-            continue
-        for fp in recipe.food_pairing.value :
-            if not fp in fps_list :
-                fps_list.append(fp)
-                fps_mapping_list.append(FoodPairingMapping(fp, [recipe.number.value]))
-            else:
-                # Find the mapped fp
-                fp_mapping = [x for x in fps_mapping_list if x.name == fp][0]
-                if recipe.number.value not in fp_mapping.found_in_beers :
-                    fp_mapping.found_in_beers.append(recipe.number.value)
+            prop_mapping = [x for x in props_mapping_list if x.name == name]
+            if len(prop_mapping) == 0 :
+                prop_mapping = BaseMapping.build_derived(prop_kind)
+                prop_mapping.name = name
+                props_mapping_list.append(prop_mapping) #type:ignore
+            else :
+                prop_mapping = prop_mapping[0]
 
-    return (fps_list, fps_mapping_list)
+            # Add new element in list
+            if recipe.number.value not in prop_mapping.found_in_beers :
+                prop_mapping.found_in_beers.append(recipe.number.value)
+
+    prop_list = [x.name for x in props_mapping_list]
+    prop_list = sorted(prop_list)
+    props_mapping_list = sorted(props_mapping_list, key=lambda x : x.name)
+
+    return (prop_list, props_mapping_list)
 
 
-def dump_dbs(name_list : list[str], content_mapping : list[BaseMapping], db_basename : str, output_directory : Path) :
+def dump_dbs(name_list : list[str], content_mapping : list[T], db_basename : str, output_directory : Path) :
     output_names_db_filepath = output_directory.joinpath(f"{db_basename}_db.json")
     output_content_mapping_filepath = output_directory.joinpath(f"{db_basename}_rv_db.json")
 
     names_db_json = {db_basename : name_list}
     with open(output_names_db_filepath, 'w') as file :
         json.dump(names_db_json, file, indent=4)
-
-    # Sorted names db as well, for debugging purposes
-    output_names_sorted_db_filepath = output_directory.joinpath(f"{db_basename}_sorted_db.json")
-    sorted_names_db = {db_basename: sorted(name_list)}
-    with open(output_names_sorted_db_filepath, 'w') as file :
-        json.dump(sorted_names_db, file, indent=4)
-
 
     content_rv_db_json = {db_basename : [x.to_json() for x in content_mapping]}
     with open(output_content_mapping_filepath, 'w') as file :
@@ -208,44 +182,57 @@ def main(args : list[str]):
     all_recipes = read_all_recipes(input_file)
 
     logger.log("Extracting hops data ...")
-    (hops_list, hops_mappings) = extract_hops(all_recipes)
+    (hops_list, hops_mappings) = extract_properties(all_recipes, PropKind.Hop)
     logger.log("-> Ok")
 
     logger.log("Extracting malts data ...")
-    (malts_list, malts_mappings) = extract_malts(all_recipes)
+    (malts_list, malts_mappings) = extract_properties(all_recipes, PropKind.Malt)
+    #(malts_list, malts_mappings) = extract_malts(all_recipes)
     logger.log("-> Ok")
 
     logger.log("Extracting yeasts data ...")
-    (yeasts_list, yeasts_mappings) = extract_yeasts(all_recipes)
+    (yeasts_list, yeasts_mappings) = extract_properties(all_recipes, PropKind.Yeast)
+    #(yeasts_list, yeasts_mappings) = extract_yeasts(all_recipes)
     logger.log("-> Ok")
 
     logger.log("Extracting tags data ...")
-    (tags_list, tags_mappings) = extract_tags(all_recipes)
+    (tags_list, tags_mappings) = extract_properties(all_recipes, PropKind.Tag)
+    #(tags_list, tags_mappings) = extract_tags(all_recipes)
     logger.log("-> Ok")
 
     logger.log("Extracting food pairing data ...")
-    (fps_list, fps_mappings) = extract_food_pairing(all_recipes)
+    (fps_list, fps_mappings) = extract_properties(all_recipes, PropKind.FoodPairing)
+    #(fps_list, fps_mappings) = extract_food_pairing(all_recipes)
+    logger.log("-> Ok")
+
+    logger.log("Extracting styles data ...")
+    (styles_list, styles_mappings) = extract_properties(all_recipes, PropKind.Style)
     logger.log("-> Ok")
 
     logger.log("Dumping databases (hops)")
-    dump_dbs(hops_list, cast(list[BaseMapping], hops_mappings), "hops", output_directory)
+    dump_dbs(hops_list, hops_mappings, "hops", output_directory)
     logger.log("-> Ok")
 
     logger.log("Dumping databases (malts)")
-    dump_dbs(malts_list, cast(list[BaseMapping], malts_mappings), "malts", output_directory)
+    dump_dbs(malts_list, malts_mappings, "malts", output_directory)
     logger.log("-> Ok")
 
     logger.log("Dumping databases (yeasts)")
-    dump_dbs(yeasts_list, cast(list[BaseMapping], yeasts_mappings), "yeasts", output_directory)
+    dump_dbs(yeasts_list, yeasts_mappings, "yeasts", output_directory)
     logger.log("-> Ok")
 
     logger.log("Dumping databases (tags)")
-    dump_dbs(tags_list, cast(list[BaseMapping], tags_mappings), "tags", output_directory)
+    dump_dbs(tags_list, tags_mappings, "tags", output_directory)
     logger.log("-> Ok")
 
     logger.log("Dumping databases (food pairings)")
-    dump_dbs(fps_list, cast(list[BaseMapping], fps_mappings), "foodPairing", output_directory)
+    dump_dbs(fps_list, fps_mappings, "foodPairing", output_directory)
     logger.log("-> Ok")
+
+    logger.log("Dumping databases (styles)")
+    dump_dbs(styles_list, styles_mappings, "styles", output_directory)
+    logger.log("-> Ok")
+
 
     return 0
 

@@ -31,6 +31,7 @@
     "Neipa",
     "Pale",
     "Pilsner",
+    "Pilsen Lager",
     "Porter",
     "Quad",
     "Red Rye",
@@ -38,5 +39,6 @@
     "Session",
     "Sour",
     "Stout",
-    "Weizenbock"
+    "Weizenbock",
+    "Witbier"
 ]
