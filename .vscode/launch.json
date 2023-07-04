@@ -40,6 +40,18 @@
             ]
         },
         {
+            "name": "Python: DB Sanitizer",
+            "type": "python",
+            "request": "launch",
+            "module": "Sources.dbsanitizer",
+            "justMyCode": false,
+            "args": [
+                "References",
+                "Sources/.cache/deployed",
+                "Sources/.cache/deployed/dbsanitizer"
+            ]
+        },
+        {
             "name": "Python: Current File",
             "type": "python",
             "request": "launch",
