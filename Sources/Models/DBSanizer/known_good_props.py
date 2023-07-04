@@ -91,13 +91,19 @@ class YeastProp(MaltProp) :
 
 class StylesProp(BaseProperty) :
     category : JsonProperty[str]
+    aliases : JsonOptionalProperty[list[str]]
 
-    def __init__(self, name: str | None = None, url: str | None = None, category : Optional[str] = None) -> None:
+    def __init__(self, name: str | None = None, url: str | None = None, category : Optional[str] = None, aliases : Optional[list[str]] = None) -> None:
         super().__init__(name, url)
         self.category = JsonProperty("category", "")
+        self.aliases = JsonOptionalProperty("aliases", None)
 
         if category :
             self.category.value = category
+
+        if aliases :
+            self.aliases.value = aliases
+
 
     def to_json(self) -> dict:
         out_dict = super().to_json()
@@ -109,4 +115,5 @@ class StylesProp(BaseProperty) :
     def from_json(self, content: dict) -> None:
         super().from_json(content)
         self.category.try_read(content, "")
+        self.aliases.value = self.aliases.read(content)
 

@@ -68,6 +68,9 @@
         {
             "name": "Winter Warmer",
             "category": "Dark Ales",
+            "aliases":[
+                "Black Ale"
+            ],
             "url": "https://www.beeradvocate.com/beer/styles/47/"
         },
         {
@@ -232,6 +235,9 @@
         {
             "name": "Bière de Garde",
             "category": "Pale Ales",
+            "aliases":[
+                "Belgian Trappist"
+            ],
             "url": "https://www.beeradvocate.com/beer/styles/127/"
         },
         {
@@ -589,6 +595,9 @@
         {
             "name": "Dunkelweizen",
             "category": "Wheat Beers",
+            "aliases" :[
+                "Bavarian Weizen"
+            ],
             "url": "https://www.beeradvocate.com/beer/styles/93/"
         },
         {

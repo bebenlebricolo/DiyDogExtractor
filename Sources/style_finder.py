@@ -13,7 +13,7 @@ from .Models import recipe as rcp
 from .Models.jsonable import Jsonable
 
 
-from .Utils.fuzzy_search import fuzzy_search_in_ref, StylesProp
+from .Utils.fuzzy_search import fuzzy_search_in_ref, StylesProp, FuzzMode
 
 @dataclass
 class RefStyle(Jsonable):
@@ -72,12 +72,12 @@ def read_tags_from_file(tags_file_path : Path) -> list[str] :
 
     return tags_list
 
-def fuzzy_search_on_real_styles(styles_ref: list[StylesProp], specimen_str : str, order_sensitive = False) -> Optional[tuple[str, MostProbableHit]]:
+def fuzzy_search_on_real_styles(styles_ref: list[StylesProp], specimen_str : str, fuzz_mode : FuzzMode = FuzzMode.Ratio) -> Optional[tuple[str, MostProbableHit]]:
     # Perform fuzzy search
     if len(specimen_str) <= 10 :
         return None
 
-    most_probable_hit = fuzzy_search_in_ref(specimen_str, styles_ref, order_sensitive)
+    most_probable_hit = fuzzy_search_in_ref(specimen_str, styles_ref)
     pair = (specimen_str, most_probable_hit)
     return None
 

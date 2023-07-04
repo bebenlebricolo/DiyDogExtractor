@@ -16,11 +16,11 @@ from .Models.jsonable import Jsonable, JsonOptionalProperty, JsonProperty
 from .style_finder import read_keywords_file, find_style_with_keywords, read_styles_from_file
 from .dbanalyser import read_all_recipes
 from .Models.DBSanizer.known_good_props import *
-from .Utils.fuzzy_search import fuzzy_search_prop, MostProbablePropertyHit
+from .Utils.fuzzy_search import fuzzy_search_prop, MostProbablePropertyHit, FuzzMode
 
 def infer_style_from_name(recipe : rcp.Recipe, styles_reflist : list[StylesProp]) -> None :
-    most_probable_hit = fuzzy_search_prop(styles_reflist, recipe.name.value)
-    if most_probable_hit and most_probable_hit[1].hit and most_probable_hit[1].score >= 50:
+    most_probable_hit = fuzzy_search_prop(styles_reflist, recipe.name.value, FuzzMode.PartialRatio)
+    if most_probable_hit and most_probable_hit[1].hit and most_probable_hit[1].score >= 80:
         recipe.style.value = most_probable_hit[1].hit.name.value
     else :
         recipe.style.value = None
@@ -32,7 +32,7 @@ def infer_style_from_tags_fuzzy_search(recipe : rcp.Recipe, styles_reflist : lis
     # Try with the fuzzy search approach
     tags_hits_map : list[tuple[str, MostProbablePropertyHit]] = []
     for tag in recipe.tags.value :
-        most_probable_hit_pair  = fuzzy_search_prop(styles_reflist, tag)
+        most_probable_hit_pair  = fuzzy_search_prop(styles_reflist, tag, FuzzMode.Ratio)
         if not most_probable_hit_pair :
             continue
         tags_hits_map.append(most_probable_hit_pair)
@@ -107,7 +107,7 @@ def merge_malts(recipes_list : list[rcp.Recipe], malts_ref : list[MaltProp], kno
                 malts_to_convert_in_extra.append(malt)
                 continue
 
-            returned_pair = fuzzy_search_prop(malts_ref, malt.name, order_sensitive=False)
+            returned_pair = fuzzy_search_prop(malts_ref, malt.name)
             most_probable_hit = returned_pair[1]
 
             # Swap malt name
@@ -143,7 +143,7 @@ def merge_hops(recipes_list : list[rcp.Recipe], hops_ref : list[HopProp], known_
                 hops_to_convert_in_extra.append(hop)
                 continue
 
-            returned_pair = fuzzy_search_prop(hops_ref, hop.name, order_sensitive=False)
+            returned_pair = fuzzy_search_prop(hops_ref, hop.name)
             most_probable_hit = returned_pair[1]
 
             # Swap hop name
@@ -160,9 +160,9 @@ def merge_hops(recipes_list : list[rcp.Recipe], hops_ref : list[HopProp], known_
 
         # Time to convert malts to extra mash ingredients
         if len(hops_to_convert_in_extra) != 0 :
-            logger.log(f"Converting hops to extra boil ingredients for recipe #{recipe.number.value} : {recipe.name.value}")
+            logger.log(f"Converting hops to extra boil/fermentation ingredients for recipe #{recipe.number.value} : {recipe.name.value}")
             for hop in hops_to_convert_in_extra :
-                logger.log(f"Converting {hop.name} into boil ingredient")
+                logger.log(f"Converting {hop.name} into boil (hot side) / fermentation (cold side) ingredient")
                 new_boil = rcp.ExtraBoil()
                 new_boil.from_hop(hop)
                 recipe.ingredients.value.add_extra_boil(new_boil)
