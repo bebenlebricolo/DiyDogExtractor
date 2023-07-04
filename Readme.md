@@ -3,7 +3,8 @@
 - [DiyDogExtractor's Index](#diydogextractors-index)
 - [DiyDog Extractor toolset](#diydog-extractor-toolset)
 - [Try it for yourself : get the required tools](#try-it-for-yourself--get-the-required-tools)
-  - [Run the script](#run-the-script)
+  - [Run the round trip script](#run-the-round-trip-script)
+  - [Run the dbextractor tool](#run-the-dbextractor-tool)
   - [Output data](#output-data)
   - [Patch the output dataset](#patch-the-output-dataset)
   - [Run database reverse indexing](#run-database-reverse-indexing)
@@ -43,7 +44,15 @@ pip install -r requirements.txt
 python -m pip install -r requirements.txt
 ```
 
-## Run the script
+## Run the round trip script
+I've provided a small script that handles the full database extraction/patching/cleanup steps.
+It can be found at [round_trip.sh](round_trip.sh) and can be executed within a Shell :
+```bash
+# Should be set as an "executable script" first -> chmod 755 round_trip.sh
+./run_script.sh
+```
+
+## Run the dbextractor tool
 The [dbextractor.py](Sources/dbextractor.py) is part of a larger python package and thus shall be called as a python module like this :
 ```bash
 #                             Force caching
