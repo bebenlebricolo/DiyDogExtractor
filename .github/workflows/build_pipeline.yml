@@ -71,7 +71,9 @@ jobs:
 
     - name : Zip extracted database
       run : |
-        zip -r Sources/.cache/deployed.zip Sources/.cache/deployed
+        pushd Sources/.cache
+        zip -r diydog-db.zip deployed/
+        popd
 
     # Now it's time to upload the newly built database
     - name: Archive extracted database for diydog book
@@ -79,7 +81,7 @@ jobs:
       if: github.event.inputs.upload_db == true
       with:
         name: diydogExtractedDB
-        path: Sources/.cache/deployed.zip
+        path: Sources/.cache/diydog-db.zip
 
     # Push images to google cloud
     - id: 'auth'
@@ -93,7 +95,7 @@ jobs:
     - id: 'upload-file'
       uses: 'google-github-actions/upload-cloud-storage@v1'
       with:
-        path: 'Sources/.cache/deployed.zip'
-        destination: '${{ secrets.DRUIDS_CORNER_CLOUD_BUCKET_NAME }}/DiyDogExracted/diydog-db'
+        path: 'Sources/.cache/diydog-db.zip'
+        destination: '${{ secrets.DRUIDS_CORNER_CLOUD_BUCKET_NAME }}/DiyDogExracted'
 
 
