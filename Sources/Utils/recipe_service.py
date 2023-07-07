@@ -27,6 +27,7 @@ def read_all_recipes(input_file : Path) -> list[Recipe] :
 def dump_individual_recipes_files_to_disk(output_folder : Path, recipes_list : list[Recipe]):
     ensure_folder_exist(output_folder)
     for recipe in recipes_list :
-        filename = f"recipe_{recipe.number}.json"
-        with open(filename, 'w') as file :
+        filename = f"recipe_{recipe.number.value}.json"
+        filepath = output_folder.joinpath(filename)
+        with open(filepath, 'w') as file :
             json.dump(recipe.to_json(), file, indent=4)

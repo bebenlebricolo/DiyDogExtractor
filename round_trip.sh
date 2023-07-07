@@ -3,7 +3,10 @@
 # This script automates the 4 major steps in
 # database extraction / cleanup performed by the tools provided.
 
-source .venv/bin/activate
+if [ -f .venv/bin/activate ]; then
+    echo "Activating python virtual environment"
+    source .venv/bin/activate
+fi
 
 echo "################# Starting up db extraction tool #################"
 python -m Sources.dbextractor false true true
@@ -14,8 +17,8 @@ python -m Sources.ScriptingTools.patcher Patches Sources/.cache/deployed/recipes
 echo -e "\n################# Starting up db cleanup tool #################"
 python -m Sources.dbsanitizer References Sources/.cache/deployed Sources/.cache/dbsanitizer
 
-echo -e "\n################# Cleaning up deployed database #################"
-cp Sources/.cache/dbsanitizer/all_recipes.json Sources/.cache/deployed/recipes/all_recipes.json
+echo -e "\n################# Copying database #################"
+cp Sources/.cache/dbsanitizer/*.json Sources/.cache/deployed/recipes
 echo "-> Ok !"
 
 echo -e "\n################# Starting up db analysis tool #################"

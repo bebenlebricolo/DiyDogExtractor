@@ -277,7 +277,7 @@ def main(args : list[str]):
     logger.log("Dumping cleaned up all_recipes.json to disk !")
     all_recipes_filepath = output_directory.joinpath("all_recipes.json")
     dump_all_recipes_to_disk(all_recipes_filepath, recipes_list)
-    logger.log("Done !")
+    logger.log("Done !\n\n")
 
     # Dumping individual files as well, as they are used to speed up IO accesses in
     # The backend later on. And they don't take that much space (1 more MB) compared to images/Pdf pages altogether (~290MB)
