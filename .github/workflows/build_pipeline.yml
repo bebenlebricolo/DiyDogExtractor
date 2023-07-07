@@ -96,6 +96,6 @@ jobs:
       uses: 'google-github-actions/upload-cloud-storage@v1'
       with:
         path: 'Sources/.cache/diydog-db.zip'
-        destination: '${{ secrets.DRUIDS_CORNER_CLOUD_BUCKET_NAME }}/DiyDogExracted'
+        destination: '${{ secrets.DRUIDS_CORNER_CLOUD_BUCKET_NAME }}/DiyDogExtracted'
 
 
