@@ -10,7 +10,7 @@ from thefuzz import fuzz
 
 from .Utils.logger import Logger
 from .Utils import filesystem as fs
-from .Utils.recipe_service import dump_all_recipes_to_disk
+from .Utils.recipe_service import dump_all_recipes_to_disk, dump_individual_recipes_files_to_disk
 from .Models import recipe as rcp
 from .Models.jsonable import Jsonable, JsonOptionalProperty, JsonProperty
 from .style_finder import read_keywords_file, find_style_with_keywords, read_styles_from_file
@@ -262,7 +262,6 @@ def main(args : list[str]):
     merge_yeasts(recipes_list, yeasts_ref_list, logger)
     logger.log("Yeast merging OK!\n\n")
 
-
     # Try to cleanup malts
     logger.log("Merging malts to known good ones ...")
     malts_ref_list = read_known_good_malts_from_file(malts_file)
@@ -280,10 +279,17 @@ def main(args : list[str]):
     dump_all_recipes_to_disk(all_recipes_filepath, recipes_list)
     logger.log("Done !")
 
+    # Dumping individual files as well, as they are used to speed up IO accesses in
+    # The backend later on. And they don't take that much space (1 more MB) compared to images/Pdf pages altogether (~290MB)
+    logger.log("Dumping cleaned up recipes individual files to disk !")
+    dump_individual_recipes_files_to_disk(output_directory, recipes_list)
+    logger.log("Done !")
 
-    # Cleaning up yeasts (merging all yeast entries with known good yeasts)
+
+    logger.log("Database sanitation Done !")
 
     return 0
+
 
 
 
