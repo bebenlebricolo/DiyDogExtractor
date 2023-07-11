@@ -157,9 +157,10 @@ def dump_dbs(name_list : list[str], content_mapping : list[T], db_basename : str
     with open(output_names_db_filepath, 'w') as file :
         json.dump(names_db_json, file, indent=4)
 
+    # Dump reversed databases to disk
     content_rv_db_json = {db_basename : [x.to_json() for x in content_mapping]}
     with open(output_content_mapping_filepath, 'w') as file :
-        json.dump({db_basename : content_rv_db_json}, file, indent=4)
+        json.dump(content_rv_db_json, file, indent=4)
 
 def main(args : list[str]):
     usage_str = "Usage : python -m Sources.dbanalyser [input_file] [output_file]"
@@ -187,22 +188,18 @@ def main(args : list[str]):
 
     logger.log("Extracting malts data ...")
     (malts_list, malts_mappings) = extract_properties(all_recipes, PropKind.Malt)
-    #(malts_list, malts_mappings) = extract_malts(all_recipes)
     logger.log("-> Ok")
 
     logger.log("Extracting yeasts data ...")
     (yeasts_list, yeasts_mappings) = extract_properties(all_recipes, PropKind.Yeast)
-    #(yeasts_list, yeasts_mappings) = extract_yeasts(all_recipes)
     logger.log("-> Ok")
 
     logger.log("Extracting tags data ...")
     (tags_list, tags_mappings) = extract_properties(all_recipes, PropKind.Tag)
-    #(tags_list, tags_mappings) = extract_tags(all_recipes)
     logger.log("-> Ok")
 
     logger.log("Extracting food pairing data ...")
     (fps_list, fps_mappings) = extract_properties(all_recipes, PropKind.FoodPairing)
-    #(fps_list, fps_mappings) = extract_food_pairing(all_recipes)
     logger.log("-> Ok")
 
     logger.log("Extracting styles data ...")
