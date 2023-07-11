@@ -23,4 +23,11 @@ echo "-> Ok !"
 
 echo -e "\n################# Starting up db analysis tool #################"
 python -m Sources.dbanalyser Sources/.cache/deployed/recipes/all_recipes.json Sources/.cache/deployed/dbanalysis
+
+echo -e "\n################# Copying References to deployed #################"
+mkdir Sources/.cache/deployed/references
+cp References/* Sources/.cache/deployed/references/
+echo "-> Ok !"
+
+
 echo -e "\n################# All steps done ! #################"
